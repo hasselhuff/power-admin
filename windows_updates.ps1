@@ -24,13 +24,20 @@ Description
 
 #>
 
-if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PSWindowsUpdate -Force).exists){
+if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PSWindowsUpdate.* -Force).exists){
+    Write-Host -ForegroundColor Cyan "PSWindowsUpdate Module already installed"
+    Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
     Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
+    Write-Host -ForegroundColor Green "Windows Update Complete! Have a nice day!"
   }
   else {
+    Write-Host -ForegroundColor Cyan "PSWindowsUpdate Module not installed"
+    Write-Host -ForegroundColor Cyan "Installing PSWindowsUpdate Module..."
     Set-ExecutionPolicy Bypass Process -Force
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
     Install-Module -Name PSWindowsUpdate -Force
     Import-Module PSWindowsUpdate
+    Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
     Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
+    Write-Host -ForegroundColor Green "Windows Update Complete! Have a nice day!"
   }
