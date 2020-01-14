@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Downloads the PSWindowsUpdate package from NuGet.
-    Does not install Cumulative, "already pending but not downloaded", and windows anti-virus libraries.
+    Does not install "already pending but not downloaded" updates.
 
 .EXAMPLE
     # Run powershell as administrator and type path to this script.
@@ -15,9 +15,9 @@ Description
 
 .NOTES
     Name:  win10_updates.ps1
-    Version: 1.0
+    Version: 1.2
     Author: Hasselhuff
-    Last Modified: 01 November 2019
+    Last Modified: 14 January 2020
 
 .REFERENCES
     https://www.powershellgallery.com/packages/PSWindowsUpdate/2.1.1.2
