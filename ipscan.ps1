@@ -4,7 +4,14 @@ hosts.
 
 Text document must have each entry on a separate line.
 
-# You must replace line 23 and 37 with the correct paths for your instance
+*** You must replace line 23 and 37 with the correct paths for your instance
+
+If you are not running PowerShell as a different user you can utilize the Desktop variable to shorten your Paths if your files
+are located there/ want to output to your desktop:
+$DesktopPath = [Environment]::GetFolderPath("Desktop")
+
+Example: -Path $DesktopPath\IpScan.txt
+
 #>
 
 #Name for Table
