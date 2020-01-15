@@ -2,7 +2,6 @@
 Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\LSA -Name RestrictAnonymous -Type DWord -Value 1 -Force
 
 # Windows Socket Address Sharing Restriction registry edit
-reg add "HKLM\System\CurrentControlSet\Services\Afd\Parameters" /v DisableAddressSharing /t REG_DWORD /d 1 /f
 Set-ItemProperty -Path HKLM:\System\CurrentControlSet\Services\Afd\Parameters -Name DisableAddressSharing -Type DWord -Value 1 -Force
 
 # Windows Update for Spectr Meltdown
