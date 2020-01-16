@@ -25,19 +25,52 @@ Description
 #>
 
 if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PSWindowsUpdate.* -Force).exists){
-    Write-Host -ForegroundColor Cyan "PSWindowsUpdate Module already installed"
-    Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
-    Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
-    Write-Host -ForegroundColor Green "Windows Update Complete! Have a nice day!"
-  }
-  else {
+    $installed = Get-Module -Name PSWindowsUpdate | Select -Property Version | Out-String -Stream | Select-Object -Skip 3
+    $currentversion = Find-Module -Name PSWindowsUpdate | Select -Property Version | Out-String -Stream | Select-Object -Skip 3
+    if ("$installed" -match "$currentversion" ){
+        Write-Host -ForegroundColor Green "Latest PSWindowsUpdate Module installed"
+        Sleep 2
+        Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate"
+        Sleep 2
+        Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
+        Write-Host -ForegroundColor Red "Cleaning: " "$_"
+        Remove-Item $_.fullname -Force -Recurse
+        Write-Host -ForegroundColor Green "Removed: " "$_"}
+        Sleep 5
+        Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
+        Sleep 2
+        Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
+        Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"}
+    else{ 
+        Write-Host -ForegroundColor Cyan "Installing latest PSWindowsUpdate Module..."
+        Sleep 2
+        Set-ExecutionPolicy Bypass Process -Force
+        Install-PackageProvider -Name NuGet -MinimumVersion $latest -Force
+        Install-Module -Name PSWindowsUpdate -Force
+        Import-Module PSWindowsUpdate -Force
+        Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
+        Sleep 2
+        Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
+        Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate"
+        Sleep 2
+        Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
+        Write-Host -ForegroundColor Red "Cleaning: " "$_"
+        Remove-Item $_.fullname -Force -Recurse
+        Write-Host -ForegroundColor Green "Removed: " "$_"}
+        Sleep 5
+        Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"
+        }}
+else {
     Write-Host -ForegroundColor Cyan "PSWindowsUpdate Module not installed"
+    Sleep 2
     Write-Host -ForegroundColor Cyan "Installing PSWindowsUpdate Module..."
+    Sleep 2
     Set-ExecutionPolicy Bypass Process -Force
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+    Install-PackageProvider -Name NuGet -MinimumVersion $latest -Force
     Install-Module -Name PSWindowsUpdate -Force
-    Import-Module PSWindowsUpdate
+    Import-Module PSWindowsUpdate -Force
     Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
+    Sleep 2
     Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
-    Write-Host -ForegroundColor Green "Windows Update Complete! Have a nice day!"
+    Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"
   }
