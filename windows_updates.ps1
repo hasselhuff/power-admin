@@ -12,12 +12,14 @@
 Description
 -----------
     Checks to see if host has PSWindowsUpdate module and automatically installs if the repository is not found.
+    Removes older versions if a newer version of PSWindowsUpdate is available.
+    Notifies on stdout if a reboot is required or if computer is already up to date.
 
 .NOTES
     Name:  win10_updates.ps1
-    Version: 1.2
+    Version: 2.1
     Author: Hasselhuff
-    Last Modified: 14 January 2020
+    Last Modified: 16 January 2020
 
 .REFERENCES
     https://www.powershellgallery.com/packages/PSWindowsUpdate/2.1.1.2
