@@ -27,10 +27,11 @@ Description
 if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PSWindowsUpdate.* -Force).exists){
     $installed = Get-Module -Name PSWindowsUpdate | Select -Property Version | Out-String -Stream | Select-Object -Skip 3
     $currentversion = Find-Module -Name PSWindowsUpdate | Select -Property Version | Out-String -Stream | Select-Object -Skip 3
+    $date = Get-Date -Format MM/dd/yyyy
     if ("$installed" -match "$currentversion" ){
         Write-Host -ForegroundColor Green "Latest PSWindowsUpdate Module installed"
         Sleep 2
-        Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate"
+        Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate..."
         Sleep 2
         Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
         Write-Host -ForegroundColor Red "Cleaning: " "$_"
@@ -40,7 +41,14 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
         Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
         Sleep 2
         Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
-        Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"}
+        $lastinstall = Get-WUHistory| Select -Property Date | Out-String -Stream | Select -Skip 3
+        $lastinstall1 = $lastinstall | Select -First 1
+        $lastinstall1 = $lastinstall1.Substring(0,10)
+        $lastinstall1= $lastinstall1.trim()
+        if ("$date" -match "$lastinstall1"){
+            Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"}
+        Else{
+            Write-Host -ForegroundColor Green "No update needed. Your computer is up to date!"}}
     else{ 
         Write-Host -ForegroundColor Cyan "Installing latest PSWindowsUpdate Module..."
         Sleep 2
@@ -51,14 +59,21 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
         Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
         Sleep 2
         Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
-        Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate"
+        Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate..."
         Sleep 2
         Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
         Write-Host -ForegroundColor Red "Cleaning: " "$_"
         Remove-Item $_.fullname -Force -Recurse
         Write-Host -ForegroundColor Green "Removed: " "$_"}
         Sleep 5
-        Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"
+        $lastinstall = Get-WUHistory| Select -Property Date | Out-String -Stream | Select -Skip 3
+        $lastinstall1 = $lastinstall | Select -First 1
+        $lastinstall1 = $lastinstall1.Substring(0,10)
+        $lastinstall1= $lastinstall1.trim()
+        if ("$date" -match "$lastinstall1"){
+            Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"}
+        Else{
+            Write-Host -ForegroundColor Green "No update needed. Your computer is up to date!"}
         }}
 else {
     Write-Host -ForegroundColor Cyan "PSWindowsUpdate Module not installed"
@@ -72,5 +87,11 @@ else {
     Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
     Sleep 2
     Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
-    Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"
-  }
+    $lastinstall = Get-WUHistory| Select -Property Date | Out-String -Stream | Select -Skip 3
+    $lastinstall1 = $lastinstall | Select -First 1
+    $lastinstall1 = $lastinstall1.Substring(0,10)
+    $lastinstall1= $lastinstall1.trim()
+    if ("$date" -match "$lastinstall1"){
+        Write-Host -ForegroundColor Green "Windows Update Complete! Computer must restart to apply updates. Have a nice day!"}
+    Else{
+        Write-Host -ForegroundColor Green "No update needed. Your computer is up to date!"}}
