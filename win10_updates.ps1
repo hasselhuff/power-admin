@@ -32,16 +32,13 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
     $date = Get-Date -Format MM/dd/yyyy
     if ("$installed" -match "$currentversion" ){
         Write-Host -ForegroundColor Green "Latest PSWindowsUpdate Module installed"
-        Sleep 2
         Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate..."
-        Sleep 2
         Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
         Write-Host -ForegroundColor Red "Cleaning: " "$_"
         Remove-Item $_.fullname -Force -Recurse
         Write-Host -ForegroundColor Green "Removed: " "$_"}
         Sleep 5
         Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
-        Sleep 2
         Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
         $lastinstall = Get-WUHistory| Select -Property Date | Out-String -Stream | Select -Skip 3
         $lastinstall1 = $lastinstall | Select -First 1
@@ -52,17 +49,15 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
         Else{
             Write-Host -ForegroundColor Green "No update needed. Your computer is up to date!"}}
     else{ 
-        Write-Host -ForegroundColor Cyan "Installing latest PSWindowsUpdate Module..."
-        Sleep 2
+        Write-Host -ForegroundColor Red "PSWindowsUpdate Module out of date"
+        Write-Host -ForegroundColor Cyan "Installing latest version of PSWindowsUpdate Module..."
         Set-ExecutionPolicy Bypass Process -Force
         Install-PackageProvider -Name NuGet -MinimumVersion $latest -Force
         Install-Module -Name PSWindowsUpdate -Force
         Import-Module PSWindowsUpdate -Force
         Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
-        Sleep 2
         Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
         Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate..."
-        Sleep 2
         Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
         Write-Host -ForegroundColor Red "Cleaning: " "$_"
         Remove-Item $_.fullname -Force -Recurse
@@ -78,9 +73,8 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
             Write-Host -ForegroundColor Green "No update needed. Your computer is up to date!"}
         }}
 else {
-    Write-Host -ForegroundColor Cyan "PSWindowsUpdate Module not installed"
-    Sleep 2
-    Write-Host -ForegroundColor Cyan "Installing PSWindowsUpdate Module..."
+    Write-Host -ForegroundColor Red "PSWindowsUpdate Module not installed"
+    Write-Host -ForegroundColor Cyan "Installing latest version of PSWindowsUpdate Module..."
     Sleep 2
     Set-ExecutionPolicy Bypass Process -Force
     Install-PackageProvider -Name NuGet -MinimumVersion $latest -Force
