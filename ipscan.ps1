@@ -22,27 +22,38 @@ $table = New-Object system.Data.DataTable “$tabName”
 #Define Columns
 $col1 = New-Object system.Data.DataColumn Hostname,([string])
 $col2 = New-Object system.Data.DataColumn IPv4,([string])
+$col3 = New-Object system.Data.DataColumn Subnet,([string])
+$col4 = New-Object system.Data.DataColumn Node,([string])
 
 #Add the Columns
 $table.columns.add($col1)
 $table.columns.add($col2)
+$table.columns.add($col3)
+$table.columns.add($col4)
 
-$Path = "Insert Path to list of hostnames"
+$Path = "path to file"
 $ips = Get-Content -Path $Path
 foreach ($ip in $ips){if ($ip4 = (Test-Connection -Count 1 $ip -ErrorAction SilentlyContinue).IPV4Address)
 {
+    $ip4 = "$ip4"
+    #Separating the IPv4 by subnet and node
+    $sep = $ip4.lastindexof(".") 
+    $subnet = $ip4.substring(0,$sep) 
+    $node = $ip4.substring($sep+1)
     #Create a row
     $row = $table.NewRow()
     #Enter data in the row
     $row.Hostname = "$ip"
     $row.IPv4 = "$ip4"
+    $row.Subnet = "$subnet"
+    $row.Node = $node
     #Add the row to the table
     $table.Rows.Add($row)
 
     #Display Hostname and IP to terminal
     Write-Host -ForegroundColor Green "$ip" 
-    Write-Output -InputObject "$ip" >> "Path to new text file to contain list of live hosts"
+    Write-Output -InputObject "$ip" >> "path to file showing list of IPs"
  }};
 
 #Display the table
-$table | format-table -AutoSize
+$table | Select-Object Hostname,IPv4,Subnet,@{l='Node';e={[int]$_.Node}} |Sort Node
