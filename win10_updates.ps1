@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Allow Windows Updates to be forced via powershell on hosts that are running PowerShell 5.1 or newer.
 
@@ -34,9 +34,9 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
         Write-Host -ForegroundColor Green "Latest PSWindowsUpdate Module installed"
         Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate..."
         Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
-        Write-Host -ForegroundColor Red "Cleaning: " "$_"
+        Write-Host -ForegroundColor Red "Cleaning:  $_"
         Remove-Item $_.fullname -Force -Recurse
-        Write-Host -ForegroundColor Green "Removed: " "$_"}
+        Write-Host -ForegroundColor Green "Removed:  $_"}
         Sleep 5
         Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
         Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
@@ -55,14 +55,14 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
         Install-PackageProvider -Name NuGet -MinimumVersion $latest -Force
         Install-Module -Name PSWindowsUpdate -Force
         Import-Module PSWindowsUpdate -Force
-        Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
-        Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
         Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate..."
         Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
-        Write-Host -ForegroundColor Red "Cleaning: " "$_"
+        Write-Host -ForegroundColor Red "Cleaning:  $_"
         Remove-Item $_.fullname -Force -Recurse
-        Write-Host -ForegroundColor Green "Removed: " "$_"}
+        Write-Host -ForegroundColor Green "Removed:  $_"}
         Sleep 5
+        Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
+        Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
         $lastinstall = Get-WUHistory| Select -Property Date | Out-String -Stream | Select -Skip 3
         $lastinstall1 = $lastinstall | Select -First 1
         $lastinstall1 = $lastinstall1.Substring(0,10)
