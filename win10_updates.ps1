@@ -38,7 +38,7 @@ function install-pswindowsupdate ($currentversion) {
 
 # Defining Windows Update function "install-windows-update"
 function install-windows-update ($date) {
-    Write-Host -ForegroundColor Cyan "Beginning Windows Update..."
+    Write-Host -ForegroundColor Cyan "Begining Windows Update..."
     Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
     # Get the history of windows updates on the host and subtract the headers and only select the install date portion
     $last_install = Get-WUHistory| Select -Property Date | Out-String -Stream | Select -Skip 3
@@ -79,13 +79,13 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
     ## Outputing the property, converting to a string, and then removing the headers to isolate the value
     $installed = Get-Module -Name PSWindowsUpdate | Select -Property Version | Out-String -Stream | Select-Object -Skip 3
     # Check the version available to download, converting to a string, and then removing the headers to isolate the value
-    $currentversion = Find-Module -Name PSWindowsUpdate| Select -Property Version | Out-String -Stream | Select-Object -Skip 3 | findstr "."
+    $currentversion = Find-Module -Name PSWindowsUpdate | Select -Property Version | Out-String -Stream | Select-Object -Skip 3
     # Get today's date
     $date = Get-Date -Format MM/dd/yyyy
 ### If the host has the module installed verify it is the latest released version of the module
     if ("$installed" -match "$currentversion" ){
         #Statement if host has the most up to date module
-        Write-Host -ForegroundColor Green "Latest PSWindowsUpdate Module installed"
+        Write-Host -ForegroundColor Green "Latest PSWindowsUpdate Module installed"}
         Sleep 5
         # Begin windows update
         install-windows-update}
