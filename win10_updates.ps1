@@ -27,14 +27,13 @@ Description
 #>
 
 # Defining function to install the PSWindowsUpdate module
-function install-pswindowsupdate ($currentversion) {
+function install-pswindowsupdate ($currentversion){
     Write-Host -ForegroundColor Cyan "Installing latest version of PSWindowsUpdate Module..."
     # Set execution policy to allow installing of module
     Set-ExecutionPolicy RemoteSigned CurrentUser -Force
     Install-PackageProvider -Name NuGet -MinimumVersion $currentversion -Force
     Install-Module -Name PSWindowsUpdate -Force
-    Import-Module PSWindowsUpdate -Force
-    }
+    Import-Module PSWindowsUpdate -Force}
 
 # Defining Windows Update function "install-windows-update"
 function install-windows-update ($date) {
@@ -62,12 +61,12 @@ function remove-old-pswindowsupdate ($currentversion){
     Write-Host -ForegroundColor Cyan "Removing older versions of PSWindowsUpdate..."
     # Remove older versions of the module on the host if they exist excluding the latest version
     if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion).Exists -eq $null){
-    Write-Host -ForegroundColor Green "No older versions present"}
-else{
-    Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
-    Write-Host -ForegroundColor Red "Cleaning:  $_"
-    Remove-Item $_.fullname -Recurse -Force
-    Write-Host -ForegroundColor Green "Removed:  $_"}}}
+        Write-Host -ForegroundColor Green "No older versions present"}
+    else{
+        Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules\PSWindowsUpdate\" -Exclude $currentversion | foreach($_){
+        Write-Host -ForegroundColor Red "Cleaning:  $_"
+        Remove-Item $_.fullname -Recurse -Force
+        Write-Host -ForegroundColor Green "Removed:  $_"}}}
 
 ######################################################################################################################################
 ########################################                Begin Script            ######################################################
@@ -85,7 +84,7 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
 ### If the host has the module installed verify it is the latest released version of the module
     if ("$installed" -match "$currentversion" ){
         #Statement if host has the most up to date module
-        Write-Host -ForegroundColor Green "Latest PSWindowsUpdate Module installed"}
+        Write-Host -ForegroundColor Green "Latest PSWindowsUpdate Module installed"
         Sleep 5
         # Begin windows update
         install-windows-update}
@@ -96,11 +95,9 @@ if ((Get-ChildItem -Path "C:\Program Files\WindowsPowerShell\Modules" -Filter PS
         install-pswindowsupdate
         remove-old-pswindowsupdate
         Sleep 5
-        install-windows-update
-        }}
-####################################################################################################################################
+        install-windows-update}}
 # Path if host did not have PSWindowsUpdate Module installed
-else {
+else{
     Write-Host -ForegroundColor Red "PSWindowsUpdate Module not installed"
     install-pswindowsupdate
     install-windows-update}
