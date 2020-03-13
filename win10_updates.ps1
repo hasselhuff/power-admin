@@ -22,9 +22,9 @@ Description
 
 .NOTES
     Name:  win10_updates.ps1
-    Version: 2.5.1
+    Version: 2.6.1
     Author: Hasselhuff
-    Last Modified: 09 March 2020
+    Last Modified: 13 March 2020
 
 .REFERENCES
     https://www.nuget.org/
@@ -106,24 +106,35 @@ function Check-ModuleInstall{
 
 function Install-Windows-Update {
     # Get Today's date
-    $date = Get-Date -Format M/D/YYYY | Out-String -Stream
+    $date = Get-Date -Format g | Out-String -Stream
+    $date = $date.Split(' ',2)
+    $date = $date[0]
     # Begin Windows Update
     Write-Host -ForegroundColor Cyan "Begining Windows Update..."
     Get-WUInstall -IgnoreUserInput -AcceptAll -Install -Download -IgnoreReboot
     # Get the history of windows updates on the host and isolate to the latest update by subtracting the headers and only select the install date portion
     $last_install = Get-WUHistory| Select -Property Date | Out-String -Stream | Select -Skip 3 | Select -First 1
-    # Split the string at the '/' into three arrays 
-    $last_install_date = $last_install.Split('/',3)
-    # Join the month and the day array with a "/"
-    $last_install_date = $last_install_date[0..1] -join "/"
+    # Split the string at the space to separate the date and the time in an array
+    $last_install_date = $last_install.Split(' ',2)
+    # Select the first value of the array which is the date portion
+    $last_install_date = $last_install_date[0]
     # Check to see if there was any updates installed when script was ran
-    if ("$day_month" -match "$last_install_date"){
-        # If updates were installed show the installed update titles
-        $updates = Get-WUHistory| Select -Property Date,Title | Out-String -Stream | Select-String -Pattern "$date"
-        Write-Host -ForegroundColor White "Installed updates:`n$updates"
-        Write-Host -ForegroundColor Green "Windows Update Complete!"}
-    else{
-        Write-Host -ForegroundColor Green "No updates available."}}
+if ("$date" -match "$last_install_date"){
+    # If updates were installed show the installed update titles
+    $updates = Get-WUHistory| Select -Property Date,Title | Out-String -Stream | Select-String -Pattern "$date"
+    Write-Host -ForegroundColor Green "Windows Update Complete!"
+    Write-Host -ForegroundColor White "Installed updates: "
+    # Break down the $updates variable into individual lines if there was more than one update installed
+    foreach($u in $updates){
+        # Converting the new variable for the inidividual line into a string
+        $u = $u.ToString()
+        # Separating at each space between the date, time, AM/PM, and the update name
+        $u = $u.Split(' ', 4)
+        # Selecting only the update name
+        $u = $u[3]
+        Write-Host -ForegroundColor Green "$u"}}
+else{
+    Write-Host -ForegroundColor Green "No updates available."}}
 
 ######################################################################################################################################
 ########################################                Begin Script            ######################################################
