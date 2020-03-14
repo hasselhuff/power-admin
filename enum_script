@@ -1,7 +1,25 @@
 <#
-Enumeration script to gather data from hosts on a network that your computer is connected to.
-
+.SYNOPSIS
+   Enumeration script to gather data from hosts on a network that your computer is connected to.
+.DESCRIPTION
+    Performs an IP scan for a range appropriate to the adapater you are wanting to conduct the scan.
+    Offers an optional TCP port scan from a list created by the administrator.
+    Outputs a table with "live" hosts and the open ports deemed from the list created by the administrator.
+    (In Development) With approved domain credentials PSremote (if enabled by the organization) into hosts to conduct
+        host enumeration of settings, firewall rules, local users and groups, network connections, etc.
+    Does not install:
+.USAGE
+    # Run powershell as administrator and type path to this script.
+.NOTES
+    Name:  enum_script.ps1
+    Version: 1.0.1
+    Authors: Hasselhuff, Magmonix
+    Last Modified: 14 March 2020
+.REFERENCES
+    https://www.sans.org/blog/pen-test-poster-white-board-powershell-built-in-port-scanner/
 #>
+
+# Following is operational
 
 #############################################################################################
 #    Creating Table for Active Hosts
@@ -14,83 +32,129 @@ $table = New-Object system.Data.DataTable “$tabName”
 
 #Define Columns
 $col1 = New-Object system.Data.DataColumn IPv4,([string])
-$col2 = New-Object system.Data.DataColumn Subnet,([string])
-$col3 = New-Object system.Data.DataColumn Node,([string])
-$col4 = New-Object system.Data.DataColumn Ports,([string])
+$col2 = New-Object system.Data.DataColumn Node,([string])
+$col3 = New-Object system.Data.DataColumn Ports,([string])
 
 #Add the Columns
 $table.columns.add($col1)
 $table.columns.add($col2)
 $table.columns.add($col3)
-$table.columns.add($col4)
 
+#############################################################################################
+#    Determine Network adapter to run ping scan
+#############################################################################################
 
-Write-Host "Which adapter are you utilizing?" -ForegroundColor Cyan
-Write-Host @"
-1. Ethernet
-2. Wi-Fi
-3. Exit
-"@ -ForegroundColor Cyan
+$ethernet = ((Get-NetIPConfiguration | Where -Property InterfaceAlias -EQ "Ethernet").IPv4Address).IPAddress | Out-String -Stream
+$wifi = ((Get-NetIPConfiguration | Where -Property InterfaceAlias -EQ "Wi-Fi").IPv4Address).IPAddress | Out-String -Stream
+
 $adapter = 0
-while( $adapter -ne 1 -and $adapter -ne 2 -and $adapter -ne 3){
-    $adapter = Read-Host "Enter the number to the corresponding adapter"
-    if($adapter = 1){
-        $myip = ((Get-NetIPConfiguration | Where -Property InterfaceAlias -EQ "Ethernet").IPv4Address).IPAddress | Out-String -Stream}
-    elseif($adapter = 2){
-        $myip = ((Get-NetIPConfiguration | Where -Property InterfaceAlias -EQ "Wi-Fi").IPv4Address).IPAddress | Out-String -Stream}
-    else{
-        return}}
-
-((Get-NetIPConfiguration | Where -Property InterfaceAlias -EQ "Wi-Fi").IPv4Address).IPAddress | Out-String -Stream
-
-### Selecting IP range for ping scan 
-Write-Host -ForegroundColor Cyan "My IP address is $myip" 
-Write-Host -ForegroundColor Cyan "Type the first 3 octets of the IP address/addresses to invoke the hosts (Host enum)"
-Write-Host -ForegroundColor Cyan "Please Include the dots ('.')"
-$first3 = Read-host "ex: 192.168.1." 
-Write-Host -ForegroundColor Cyan "Type the last octet of first IP range address/addresses"
-Write-Host -ForegroundColor Cyan "If the IP range is from 192.168.11.5 to 192.168.11.16, then 5 is the answer."
-$first1 = Read-host "ex: 5           " 
-Write-Host -ForegroundColor Cyan "Type the last octet of last IP range address/addresses"
-Write-Host -ForegroundColor Cyan "If the IP address range is from 192.168.11.5 to 192.168.11.16, then 16 is the answer."
-$last1 = Read-host "ex: 16          "
+while($adapter -ne 1 -or $adapter -ne 2 -or $adapter -ne 3){
+Write-Host "Which adapter would you like to utilize?" -ForegroundColor Cyan
+Write-Host @"
+1. Ethernet:  $ethernet
+2. Wi-Fi:     $wifi  
+3. Exit
+"@
+$adapter = Read-Host "Enter the number to the corresponding adapter"
+    if($adapter -eq 1){
+        if($ethernet -eq $null){
+            Write-Host -ForegroundColor Red "Ethernet adapter has no assigned IP. Please choose an adapter with a valid IP."
+            $adapter = 0}
+        else{
+            $myip = $ethernet
+            break}}
+    elseif($adapter -eq 2){
+        if($wifi -eq $null){
+            Write-Host -ForegroundColor Red "Wi-Fi adapter has no assigned IP. Please choose an adapter with a valid IP."
+            $adapter = 0}
+        else{
+            $myip = $wifi
+            break}}
+    elseif($adapter -eq 3){
+        Write-Host "Exiting script"
+        return}
+    else{ 
+        $adapter = 0
+        }}
 
 ### Clear Screen
-Clear-Host 
+cls
+#############################################################################################
+#    Selecting IP range for ping scan
+############################################################################################# 
+$first3 = $myip.Split('.',4)
+$first3 = $first3[0..2] -join '.'
+$first3 = $first3 + '.'
+$start = Read-host "Enter start range for IP scan on $first3 " 
+$end = Read-host "Enter end range for IP scan on $first3" 
 
+### Clear Screen
+cls
+
+#############################################################################################
+#    Selecting Ports to scan
+#############################################################################################
+$ports = @()
+$select = 0
+$total_ports = (1..65535)
+
+while( $select -eq 0){
+Write-Host "Which ports would you like to scan?" -ForegroundColor Cyan
+Write-Host @"
+1. <Enter port number>
+2. Enter "cont" to continue script
+3. Enter "quit" to exit script
+"@
+$select = Read-Host ":"
+    if($select -icontains "cont"){
+        Write-Host -ForegroundColor Gray "Continuing to IP Scan"
+            break}
+    elseif($select -icontains "quit"){
+        Write-Host "Exiting script"
+        return}
+    elseif($select -in $total_ports){
+        $ports += $select
+        $sample_ports = ($ports | group |Select -ExpandProperty Name) -join ", "
+        cls
+        Write-Host -ForegroundColor Green "Ports currently selected: $sample_ports"
+        $select = 0}
+    else{ 
+        Write-Host -ForegroundColor Red "Selection invalid"
+        $select = 0
+        }}
+
+
+#############################################################################################
+#    Begin IP Scan
+#############################################################################################
 Write-Host -ForegroundColor Cyan "##########    Scanning IPs    ##########"
-foreach ($i in $first1..$last1){
-    $ip = '$first3' + '$i'
+foreach ($i in $start..$end){
+    $ip = $first3 + $i
     if (Test-Connection -Count 1 $ip -ErrorAction SilentlyContinue){
         $ip4 = "$ip"
         # Separating the IPv4 by subnet and node
-        $sep = $ip4.lastindexof(".") 
-        $subnet = $ip4.substring(0,$sep) 
+        $sep = $ip4.lastindexof(".")  
         $node = $ip4.substring($sep+1)
-        # List of ports to scan
-        $ports = 135,139,445,5939
         # Make $portsopen null so that it does not carry the values from previous IP connections
-        $portsopen = @()
+        $open_ports = @()
         # Try connecting to open ports
         foreach($p in $ports){
           # Connect to port and if it succeeds add to the portsopen array 
           try {$p | % {((new-object Net.Sockets.TcpClient).Connect($ip4,$_))} 2>$null
               # Add the port to the array
-              $portsopen = $portsopen += $p 
+              $open_ports += $p
               }
           # If the port is closed do nothing and show no errors
            Catch{
               }}
         # Make the $portsopen array into a single line with commas between ports
-        $portsopenline = ($portsopen | group |Select -ExpandProperty Name) -join ","
+        $open_ports_list = ($open_ports | group |Select -ExpandProperty Name) -join ", "
         #Create a row
         $row = $table.NewRow()
         #Enter data in the row
-        $row.Hostname = "$ip"
         $row.IPv4 = "$ip4"
-        $row.Subnet = "$subnet"
         $row.Node = $node
-        $row.Ports = "$portsopenline"
+        $row.Ports = "$open_ports_list"
         #Add the row to the table
         $table.Rows.Add($row)
 
@@ -101,57 +165,75 @@ foreach ($i in $first1..$last1){
         }}
 
 #Display the table on the terminal
-$table | Select-Object Hostname,IPv4,Subnet,@{l='Node';e={[int]$_.Node}},Ports | Sort Node | Format-Table -AutoSize
+$table | Select-Object IPv4,@{l='Node';e={[int]$_.Node}},Ports | Sort Node | Format-Table -AutoSize
 
-<#   
-    set-item WSMAN:\localhost\Client\TrustedHosts -value "$(echo $first3'.'$i)" -Force
-    $session = New-PSSession -computername "$(echo $first3'.'$i)" -Credential $cred
-    sleep 2
-    Invoke-Command -Session $session -ScriptBlock {
-    echo "####################################################"
-    echo "This host last octet is $Using:i"
-    echo "Curent host name is"
-    hostname;
-    echo "Current Date and time is"
-    Get-Date | format-list year, month, day, date ,hour, second, dayofweek;
-    systeminfo;                                         #Sytem info, version, hotfix, virtual machine info, Product ID
-    whoami;                                             #Computer and current user name
-    $env:path;                                           #Basic command path(Mainly Windows paths)
-    $env:temp;
-    ipconfig;                                           #Basic IP configs
-    ipconfig /displaydns;                               #Previous DNS queries and A/AAAA/PTR records
-    netstat -ano | findstr /V ":: 172.16.12.14";        #All opened ports with PID except .14 and IPv6 listening ports
-    netstat -bn;                                        #TCP ports with process names
-    type C:\Windows\System32\drivers\etc\hosts;         #Host file (to resolve the name to IP) before sending DNS queries
-    get-process -Verbose | Select-Object name, path, handle | Sort-Object -Property path -Unique;
-    Get-LocalUser | Format-Table name, sid
-    Get-LocalGroup | format-table name, sid, principalsource
-    net use | findstr ': $' |findstr /V "Z:" 
-    net share | findstr ': $' |findstr /V "Z:"  
-    arp -a | findstr /V "224.0.0.22 224.0.0.252 255.255.255.255 ff-ff-ff-ff-ff-ff"
-    route print -4;
-    netsh advfirewall show allprofiles | findstr /i "State Setting";
-    netsh firewall show state | findstr /V "IMPORTANT However instead information microsoft.com";
-    netsh firewall show config | findstr /i "enable configuration --  ";
-    netsh wlan export profile key=clear; 
-    reg query hklm\Software\Microsoft\Windows\CurrentVersion\Run /s; 
-    reg query hkcu\Software\Microsoft\Windows\CurrentVersion\Run /s;
-    Get-Scheduledtask;  #schtasks /query
-    driverquery | findstr "2018 2019 2020"  
-    echo "                    COMPLETED                       "
-    echo "####################################################"
-    echo "####################################################"
-    } | Out-File .\hostlastoctet$i.txt -Append
-    Remove-PSSession -Session $session 
-    cls
-    echo "IP $(echo $first3'.'$i) query is done "
-    sleep 2 
-    cls
-    echo "########  Please wait  ##########"
-    }
 
-    #Powershell SCP
-    #copy-item -path 'C:\Users\DCI Student\Desktop\GRR_3.1.0.2_amd64 (1).exe' -Destination 'c:\' -tosession $session
-    #Remote Launcher
-    #Invoke-Command -Session $session -Command {powershell C:\GRR_3.1.0.2_amd64 (1).exe}
-    #>
+##################################################################################################################################
+##################################################################################################################################
+##################################################################################################################################
+##################################################################################################################################
+##################################################################################################################################
+##################################################################################################################################
+##################################################################################################################################
+##################################################################################################################################
+
+
+<#  
+IN PROGRESS
+
+set-item WSMAN:\localhost\Client\TrustedHosts -value "$(echo $first3'.'$i)" -Force
+$session = New-PSSession -computername "$(echo $first3'.'$i)" -Credential $cred
+sleep 2
+Invoke-Command -Session $session -ScriptBlock {
+}
+
+#Powershell SCP
+#copy-item -path 'C:\Users\DCI Student\Desktop\GRR_3.1.0.2_amd64 (1).exe' -Destination 'c:\' -tosession $session
+#Remote Launcher
+#Invoke-Command -Session $session -Command {powershell C:\GRR_3.1.0.2_amd64 (1).exe}
+#>
+
+<#
+IN PROGRESS
+
+echo "####################################################"
+echo "This host last octet is $Using:i"
+echo "Curent host name is"
+hostname;
+echo "Current Date and time is"
+Get-Date | format-list year, month, day, date ,hour, second, dayofweek;
+systeminfo;                                         #Sytem info, version, hotfix, virtual machine info, Product ID
+whoami;                                             #Computer and current user name
+$env:path;                                           #Basic command path(Mainly Windows paths)
+$env:temp;
+ipconfig;                                           #Basic IP configs
+ipconfig /displaydns;                               #Previous DNS queries and A/AAAA/PTR records
+netstat -ano | findstr /V ":: 172.16.12.14";        #All opened ports with PID except .14 and IPv6 listening ports
+netstat -bn;                                        #TCP ports with process names
+type C:\Windows\System32\drivers\etc\hosts;         #Host file (to resolve the name to IP) before sending DNS queries
+get-process -Verbose | Select-Object name, path, handle | Sort-Object -Property path -Unique;
+Get-LocalUser | Format-Table name, sid
+Get-LocalGroup | format-table name, sid, principalsource
+net use | findstr ': $' |findstr /V "Z:" 
+net share | findstr ': $' |findstr /V "Z:"  
+arp -a | findstr /V "224.0.0.22 224.0.0.252 255.255.255.255 ff-ff-ff-ff-ff-ff"
+route print -4;
+netsh advfirewall show allprofiles | findstr /i "State Setting";
+netsh firewall show state | findstr /V "IMPORTANT However instead information microsoft.com";
+netsh firewall show config | findstr /i "enable configuration --  ";
+netsh wlan export profile key=clear; 
+reg query hklm\Software\Microsoft\Windows\CurrentVersion\Run /s; 
+reg query hkcu\Software\Microsoft\Windows\CurrentVersion\Run /s;
+Get-Scheduledtask;  #schtasks /query
+driverquery | findstr "2018 2019 2020"  
+echo "                    COMPLETED                       "
+echo "####################################################"
+echo "####################################################"
+} | Out-File .\hostlastoctet$i.txt -Append
+Remove-PSSession -Session $session 
+cls
+echo "IP $(echo $first3'.'$i) query is done "
+sleep 2 
+cls
+echo "########  Please wait  ##########"
+#>
