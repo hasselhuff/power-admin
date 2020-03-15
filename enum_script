@@ -1,3 +1,4 @@
+
 <#
 .SYNOPSIS
    Enumeration script to gather data from hosts on a network that your computer is connected to.
@@ -12,9 +13,9 @@
     # Run powershell as administrator and type path to this script.
 .NOTES
     Name:  enum_script.ps1
-    Version: 1.0.1
+    Version: 1.1.1
     Authors: Hasselhuff, Magmonix
-    Last Modified: 14 March 2020
+    Last Modified: 15 March 2020
 .REFERENCES
     https://www.sans.org/blog/pen-test-poster-white-board-powershell-built-in-port-scanner/
 #>
@@ -107,7 +108,7 @@ Write-Host @"
 "@
 $select = Read-Host ":"
     if($select -icontains "cont"){
-        Write-Host -ForegroundColor Gray "Continuing to IP Scan"
+        Write-Host -ForegroundColor Gray "Continuing..."
             break}
     elseif($select -icontains "quit"){
         Write-Host "Exiting script"
@@ -127,7 +128,7 @@ $select = Read-Host ":"
 #############################################################################################
 #    Begin IP Scan
 #############################################################################################
-Write-Host -ForegroundColor Cyan "##########    Scanning IPs    ##########"
+Write-Host -ForegroundColor Gray "##########    Scanning IPs    ##########"
 foreach ($i in $start..$end){
     $ip = $first3 + $i
     if (Test-Connection -Count 1 $ip -ErrorAction SilentlyContinue){
@@ -148,7 +149,7 @@ foreach ($i in $start..$end){
            Catch{
               }}
         # Make the $portsopen array into a single line with commas between ports
-        $open_ports_list = ($open_ports | group |Select -ExpandProperty Name) -join ", "
+        $open_ports_list = $open_ports -join ", "
         #Create a row
         $row = $table.NewRow()
         #Enter data in the row
@@ -168,6 +169,7 @@ foreach ($i in $start..$end){
 $table | Select-Object IPv4,@{l='Node';e={[int]$_.Node}},Ports | Sort Node | Format-Table -AutoSize
 
 
+
 ##################################################################################################################################
 ##################################################################################################################################
 ##################################################################################################################################
@@ -179,8 +181,6 @@ $table | Select-Object IPv4,@{l='Node';e={[int]$_.Node}},Ports | Sort Node | For
 
 
 <#  
-IN PROGRESS
-
 set-item WSMAN:\localhost\Client\TrustedHosts -value "$(echo $first3'.'$i)" -Force
 $session = New-PSSession -computername "$(echo $first3'.'$i)" -Credential $cred
 sleep 2
@@ -192,48 +192,105 @@ Invoke-Command -Session $session -ScriptBlock {
 #Remote Launcher
 #Invoke-Command -Session $session -Command {powershell C:\GRR_3.1.0.2_amd64 (1).exe}
 #>
-
 <#
-IN PROGRESS
+# Create a text file with the current date on the desktop of the PSRemoted user
+$date = Get-Date -Format M-d-yy
+$file = New-Item -Name scan-$date.txt -ItemType File -Path "C:$env:HOMEPATH\Desktop\"
 
-echo "####################################################"
-echo "This host last octet is $Using:i"
-echo "Curent host name is"
-hostname;
-echo "Current Date and time is"
-Get-Date | format-list year, month, day, date ,hour, second, dayofweek;
-systeminfo;                                         #Sytem info, version, hotfix, virtual machine info, Product ID
-whoami;                                             #Computer and current user name
-$env:path;                                           #Basic command path(Mainly Windows paths)
-$env:temp;
-ipconfig;                                           #Basic IP configs
-ipconfig /displaydns;                               #Previous DNS queries and A/AAAA/PTR records
-netstat -ano | findstr /V ":: 172.16.12.14";        #All opened ports with PID except .14 and IPv6 listening ports
-netstat -bn;                                        #TCP ports with process names
-type C:\Windows\System32\drivers\etc\hosts;         #Host file (to resolve the name to IP) before sending DNS queries
-get-process -Verbose | Select-Object name, path, handle | Sort-Object -Property path -Unique;
-Get-LocalUser | Format-Table name, sid
-Get-LocalGroup | format-table name, sid, principalsource
-net use | findstr ': $' |findstr /V "Z:" 
-net share | findstr ': $' |findstr /V "Z:"  
-arp -a | findstr /V "224.0.0.22 224.0.0.252 255.255.255.255 ff-ff-ff-ff-ff-ff"
-route print -4;
-netsh advfirewall show allprofiles | findstr /i "State Setting";
-netsh firewall show state | findstr /V "IMPORTANT However instead information microsoft.com";
-netsh firewall show config | findstr /i "enable configuration --  ";
-netsh wlan export profile key=clear; 
-reg query hklm\Software\Microsoft\Windows\CurrentVersion\Run /s; 
-reg query hkcu\Software\Microsoft\Windows\CurrentVersion\Run /s;
-Get-Scheduledtask;  #schtasks /query
-driverquery | findstr "2018 2019 2020"  
-echo "                    COMPLETED                       "
-echo "####################################################"
-echo "####################################################"
+$start_time = Get-Date | Out-String -Stream
+Add-Content -Value "Enumeration Start Time: $start_time" $file
+Add-Content -Value " " $file
+
+Add-Content -Value "################    System Information    ################" $file
+Get-CimInstance Win32_OperatingSystem | Select -Property Caption,OSArchitecture,Manufacturer,InstallDate,LastBootUpTime,LocalDateTime,CountryCode,MUILanguages >> $file
+(Get-CimInstance Win32_TimeZone).Caption >> $file
+Get-CimInstance Win32_ComputerSystem | Select Name,Domain,Model,Manufacturer >> $file
+Add-Content -Value " " $file
+Get-CimInstance Win32_OperatingSystem | Select Version,Build,SystemDirectory >> $file
+Get-WinSystemLocale | Select -Property DisplayName >> $file
+Get-CimInstance Win32_BIOS | Select -Property SMBIOSBIOSVersion >> $file
+Get-CimInstance Win32_Processor | Select -Property Name,MaxClockSpeed >> $file
+Get-CimInstance Win32_BootConfiguration | Select -Property BootDirectory,Name,Caption >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "################      System Paths      ################" $file
+Get-CimInstance Win32_Environment | Format-Table -AutoSize -Wrap >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "################     Installed KBs     ################" $file
+Get-HotFix | Select -Property HotFixID >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "################    Network Adapters    ################" $file
+Get-NetIPConfiguration
+Add-Content -Value "Logon Server: $env:LOGONSERVER" $file
+Add-Content -Value " " $file
+
+Add-Content -Value "################       DNS Cache       ################" $file
+Get-DnsClientCache | Format-Table -AutoSize >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "########   Network Connections and Processes   ########" $file
+Get-NetTCPConnection | Select -Property LocalAddress,LocalPort,RemoteAddress,RemotePort,State,OwningProcess | Format-Table -AutoSize -Wrap >> $file
+Get-Process | Select -Property Id,ProcessName,Path | Sort -Property Id | Format-Table -AutoSize -Wrap >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "################       Host File       ################" $file
+Get-Content -Path C:\Windows\System32\drivers\etc\hosts >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "##############     Users and Groups    ###############" $file
+Get-CimInstance Win32_useraccount | select -property Domain,Name,AccountType,SID | Format-Table -Autosize -Wrap >> $file
+Get-LocalGroup | format-table name, sid, principalsource >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "##############     Network Shares    ###############" $file
+Get-CimInstance Win32_Share >> $file
+Get-PSDrive | Where {$_.Root -ne ""} >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "###############     Route Table    ################" $file
+arp -a | findstr /V "224.0.0.22 224.0.0.252 255.255.255.255 ff-ff-ff-ff-ff-ff" >> $file
+route print -4 >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "###############     Route Table    ################" $file
+netsh advfirewall show allprofiles | findstr /i "State Setting" >> $file
+netsh firewall show state | findstr /V "IMPORTANT However instead information microsoft.com" >> $file
+netsh firewall show config | findstr /i "enable configuration --  " >> $file
+netsh wlan export profile key=clear >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "##########     Run Registry Entries    ###########" $file
+Get-Item -path HKLM:\Software\Microsoft\Windows\CurrentVersion\Run >> $file
+Get-Item -Path HKCU:\\Software\Microsoft\Windows\CurrentVersion\Run >> $file
+Add-Content -Value " " $file
+
+Add-Content -Value "############     Scheduled Tasks    #############" $file
+Get-Scheduledtask
+Add-Content -Value " " $file
+
+Add-Content -Value "###########     Installed Drivers    ############" $file
+driverquery | findstr /i "2018 2019 2020" >> $file
+Add-Content -Value " " $file
+
+$end_time = Get-Date | Out-String -Stream
+Add-Content -Value "Enumeration Start Time: $end_time" $file
+Add-Content -Value " " $file
+
+
+
 } | Out-File .\hostlastoctet$i.txt -Append
+
 Remove-PSSession -Session $session 
+
 cls
-echo "IP $(echo $first3'.'$i) query is done "
+
+Write-Host -ForegroundColor Green "IP $(echo $first3'.'$i) query is done "
+
 sleep 2 
 cls
 echo "########  Please wait  ##########"
+
+# Remove-Item -Path "C:$env:HOMEPATH\Desktop\scan-$date.txt"
 #>
