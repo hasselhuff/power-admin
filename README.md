@@ -10,7 +10,7 @@ Scripts are divided into categories for ease of searching.
     - enum_script.psm1: can be used to scan active IP's on a network based on which networks your network adapters are connected to, scan         for active ports either by manual selection or common ports, PSRemoting (if the host has it enabled and you have credentials to           the remote host) to conduct enumeration of settings and other information of interest.
  
 
-These scripts are built in mind that you do not want:
-    1. Alert the user of any changes or your presence on their machine.
-    2. Supress forced reboots (unless otherwise specified in the script).
-    3. Leave minimal traces on the user's machine.
+## These scripts are built in mind that you do not want:
+- Alert the user of any changes or your presence on their machine.
+- Supress forced reboots (unless otherwise specified in the script).
+- Leave minimal traces on the user's machine.
