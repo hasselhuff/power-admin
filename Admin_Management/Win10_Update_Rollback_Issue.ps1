@@ -64,9 +64,22 @@ cd $dcu_path
 #.\dcu-cli.exe /configure -autoSuspendBitLocker=disable                                                 # Suspend Bitlocker only if an update needs it. Auto enables on reboot
 .\dcu-cli.exe /applyUpdates -reboot=enable                                                             # Install all new drivers and updates
 #.\dcu-cli.exe /driverInstall                                                                           # Re-install all drivers current drivers
-cd C:\Windows\System32
 
-# Disable all non-Microsoft Services except for TeamViewer, Qualys, and CISCO vpn
+# Disable all non-Microsoft Services except for TeamViewer, Qualys, CloudBerry, and CISCO vpn
+$RequiredServices = Get-wmiobject win32_service | where { 
+$_.Caption -notmatch "Windows" `
+-and $_.PathName -notmatch "Windows" -and $_.PathName -notmatch "policyhost.exe" -and $_.PathName -notmatch "OSE.EXE" `
+-and $_.PathName -notmatch "OSPPSVC.EXE" -and $_.PathName -notmatch "Microsoft Security Client" `
+-and $_.Name -ne "LSM" -and $_.Name -ne "QualysAgent" -and $_.Name -ne "vpnagent" -and $_.Name -ne "TeamViewer" `
+-and $_.Name -ne "SepMasterService" -and $_.Name -notmatch "online backup"}
+
+$ServiceList = $RequiredServices | Select -Property Name | Out-String -Stream
+$ServiceList = $ServiceList | Select -Skip 3
+foreach ($Service in $ServiceList){
+    $Service = ($Service).Trim()
+    Set-Service -Name $Service -StartupType Manual -ErrorAction SilentlyContinue -WhatIf}
+    
+# Creation of Scheduled Task to start on boot up to perform: windows update, delete the scheduled task and reboot
 
 # Perform restart
 Restart-Computer -WhatIf
