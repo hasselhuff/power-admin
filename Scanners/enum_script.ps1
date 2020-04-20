@@ -188,9 +188,9 @@ Invoke-Command -Session $session -ScriptBlock {
 }
 
 #Powershell SCP
-#copy-item -path 'C:\Users\DCI Student\Desktop\GRR_3.1.0.2_amd64 (1).exe' -Destination 'c:\' -tosession $session
+#copy-item -path '<to file>' -Destination '<destination path>' -tosession $session
 #Remote Launcher
-#Invoke-Command -Session $session -Command {powershell C:\GRR_3.1.0.2_amd64 (1).exe}
+#Invoke-Command -Session $session -Command {powershell <recieved file>}
 #>
 <#
 # Create a text file with the current date on the desktop of the PSRemoted user
