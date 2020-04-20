@@ -3,10 +3,10 @@
     Allow Windows Updates to be forced via powershell on hosts that are running PowerShell 5.1 or newer.
 
 .DESCRIPTION
-    Downloads the PSWindowsUpdate package from NuGet.
+    Adds the NuGet Package Provider
+    Downloads the PSWindowsUpdate and PendingReboot packages from NuGet.
     Does not install:
         - "Already pending but not downloaded" updates.
-        - Optional Cumulative updates.
 
 .EXAMPLE
     # Run powershell as administrator and type path to this script.
