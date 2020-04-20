@@ -64,6 +64,7 @@ cd $dcu_path
 #.\dcu-cli.exe /configure -autoSuspendBitLocker=disable                                                 # Suspend Bitlocker only if an update needs it. Auto enables on reboot
 .\dcu-cli.exe /applyUpdates -reboot=enable                                                             # Install all new drivers and updates
 #.\dcu-cli.exe /driverInstall                                                                           # Re-install all drivers current drivers
+cd C:\Windows\System32
 
 # Disable all non-Microsoft Services except for TeamViewer, Qualys, and CISCO vpn
 
