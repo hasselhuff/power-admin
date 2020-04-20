@@ -12,7 +12,6 @@
     Performs driver update with the Dell Command Update command line utility
     Disables non-Microsoft services with exceptions.
     Performs restart on host
-
 .USAGE
     Run powershell as administrator and type path to this script.
 .NOTES
