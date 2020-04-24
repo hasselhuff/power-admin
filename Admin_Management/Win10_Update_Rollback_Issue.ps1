@@ -28,8 +28,11 @@ Suspend-BitLocker -MountPoint "C:" -RebootCount 1
 # Pause Windows Update
 
 # Perform Disk Clean Up and clear out windows update cache
+#reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Update Cleanup" /v StateFlags0100 /t REG_DWORD /d 0x2 /f # Adds windows update cleanup to disk cleanup state 100, as if you had clicked the check box manually. 
+#cleanmgr /sagerun:100 # Runs disk cleanup, state 100, which does temp files and windows update cleanup. Still shows GUI progress bar but doesn't require interaction.
 
 # Perform Disk Defragment
+#Optimize-Volume -DriveLetter C -Defrag # defrags C: drive
 
 # Delete and recreate the SoftwareDistribution folder
 Stop-Service -Name BITS -Force
