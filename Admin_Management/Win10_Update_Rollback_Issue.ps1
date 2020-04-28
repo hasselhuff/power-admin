@@ -16,9 +16,9 @@
     Run powershell as administrator and type path to this script.
 .NOTES
     Name:  Win10_Update_Rollback_Issue.ps1
-    Version: 0.0.5
+    Version: 0.0.6
     Authors: Hasselhuff, mclark-titor
-    Last Modified: 20 April 2020
+    Last Modified: 28 April 2020
 .REFERENCES
 #>
 
@@ -63,7 +63,7 @@ sfc /scannow
 # Perform driver updates with Dell Command Update
 $dcu_path = (Get-ChildItem -Path C:\ -Filter dcu-cli.exe -ErrorAction SilentlyContinue -Recurse -Force).DirectoryName
 cd $dcu_path
-.\dcu-cli.exe /scan -report=C:\Users\Edmond.Shore\Desktop\Dell_UpdatesReport.xml                       # Creates xml of available updates from scan
+.\dcu-cli.exe /scan -report=C:\Temp\Dell_UpdatesReport.xml                       # Creates xml of available updates from scan
 #.\dcu-cli.exe /configure -autoSuspendBitLocker=disable                                                 # Suspend Bitlocker only if an update needs it. Auto enables on reboot
 .\dcu-cli.exe /applyUpdates -reboot=enable                                                             # Install all new drivers and updates
 #.\dcu-cli.exe /driverInstall                                                                           # Re-install all drivers current drivers
@@ -80,9 +80,9 @@ $ServiceList = $RequiredServices | Select -Property Name | Out-String -Stream
 $ServiceList = $ServiceList | Select -Skip 3
 foreach ($Service in $ServiceList){
     $Service = ($Service).Trim()
-    Set-Service -Name $Service -StartupType Manual -ErrorAction SilentlyContinue -WhatIf}
+    Set-Service -Name $Service -StartupType Manual -ErrorAction SilentlyContinue}
     
 # Creation of Scheduled Task to start on boot up to perform: windows update, delete the scheduled task and reboot
 
 # Perform restart
-Restart-Computer -WhatIf
+Restart-Computer
