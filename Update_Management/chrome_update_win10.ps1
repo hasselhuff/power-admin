@@ -20,7 +20,7 @@
     Name:  chrome_update_win10.ps1
     Version: 1.2.3
     Author: Hasselhuff
-    Last Modified: 16 April 2020
+    Last Modified: 28 April 2020
 
 .REFERENCES
     https://chromereleases.googleblog.com/search/label/Stable%20updates
