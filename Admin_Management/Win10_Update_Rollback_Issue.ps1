@@ -73,8 +73,7 @@ $RequiredServices = Get-wmiobject win32_service | where {
 $_.Caption -notmatch "Windows" `
 -and $_.PathName -notmatch "Windows" -and $_.PathName -notmatch "policyhost.exe" -and $_.PathName -notmatch "OSE.EXE" `
 -and $_.PathName -notmatch "OSPPSVC.EXE" -and $_.PathName -notmatch "Microsoft Security Client" `
--and $_.Name -ne "LSM" -and $_.Name -ne "QualysAgent" -and $_.Name -ne "vpnagent" -and $_.Name -ne "TeamViewer" `
--and $_.Name -ne "SepMasterService" -and $_.Name -notmatch "online backup"}
+-and $_.Name -ne "LSM"}
 
 $ServiceList = $RequiredServices | Select -Property Name | Out-String -Stream
 $ServiceList = $ServiceList | Select -Skip 3
