@@ -18,7 +18,7 @@
     Name:  Win10_Update_Rollback_Issue.ps1
     Version: 0.1.2
     Authors: Hasselhuff, mclark-titor
-    Last Modified: 22 May 2020
+    Last Modified: 02 June 2020
 .REFERENCES
 #>
 
@@ -104,6 +104,17 @@ Sleep 5
 Write-Host "Performing System File Checks" -ForegroundColor Cyan
 cmd /C sfc /scannow
 Sleep 3
+###################################################################################################################################
+# Enabling .NET Frameworks
+Write-Host -ForegroundColor Cyan "Checking for Available .NET Frameworks"
+$ASPNET = (Get-WindowsOptionalFeature -Online | Where {$_.State -match "Disabled" -and $_.FeatureName -match '\w*-ASPNET\d\d' -and $_.FeatureName -match '^Net'}).FeatureName
+
+if ($ASPNET -ne $null){
+    foreach ($a in $ASPNET){
+        Write-Host -ForegroundColor Green "$a is available!"
+        Enable-WindowsOptionalFeature -Online -FeatureName $a -NoRestart -ErrorAction SilentlyContinue }}
+else{
+    Write-Host -ForegroundColor Red "There is no ASP .NET Framework available for install"}
 ###################################################################################################################################
 # Perform driver updates with Dell Command Update
 Write-Host "Begining Driver Updates" -ForegroundColor Cyan
@@ -385,11 +396,11 @@ $Required_Services =@(
 "cbdhsvc_132fce", "CDPSvc", "CDPUserSvc_132fce", "CertPropSvc", "ClickToRunSvc", "CoreMessagingRegistrar", "CryptSvc", "DcomLaunch", "DeviceAssociationService", `
 "Dhcp", "DiagTrack", "DispBrokerDesktopSvc", "Dnscache", "DoSvc", "DPS", "DusmSvc", "EventLog", "EventSystem", "FileSyncHelper", "FontCache", "FontCache3.0.0.0", `
 "gpsvc", "hidserv", "IKEEXT", "InstallService", "iphlpsvc", "KeyIso", "LanmanServer", "LanmanWorkstation", "LicenseManager", "lmhosts", "LSM", "mpssvc", "NcbService", `
-"Netlogon", "netprofm", "NlaSvc", "nsi", "OneDrive Updater Service", "OneSyncSvc_132fce", "OSE.EXE", `
-"OSPPSVC.EXE", "PcaSvc", "perceptionsimulation", "PlugPlay", "PolicyAgent", "policyhost.exe", "Power", "ProfSvc", "QWAVE", "RasMan", "RpcEptMapper", "RpcSs", `
+"Netlogon", "netprofm", "NlaSvc", "nsi", "OneDrive Updater Service", "OneSyncSvc_132fce", "online backup Service", "online backup Service Remote Management", "OSE.EXE", `
+"OSPPSVC.EXE", "PcaSvc", "perceptionsimulation", "PlugPlay", "PolicyAgent", "policyhost.exe", "Power", "ProfSvc", "QualysAgent", "QWAVE", "RasMan", "RpcEptMapper", "RpcSs", `
 "SamSs", "SCardSvr", "Schedule", "SDRSVC", "seclogon", "SecurityHealthService", "SENS", "sepWscSvc", "SgrmBroker", "SharedRealitySvc", `
 "ShellHWDetection", "SmsRouter", "spectrum", "Spooler", "SSDPSRV", "SstpSvc", "StateRepository", "StorSvc", "SysMain", "SystemEventsBroker", "TabletInputService", "TapiSrv", `
-"Themes", "TimeBrokerSvc", "TokenBroker", "TrkWks", "upnphost", "UserManager", "UsoSvc", "VaultSvc", "W32Time", "WbioSrvc", "Wcmsvc", `
+"TeamViewer", "Themes", "TimeBrokerSvc", "TokenBroker", "TrkWks", "upnphost", "UserManager", "UsoSvc", "VaultSvc", "vpnagent", "W32Time", "WbioSrvc", "Wcmsvc", `
 "wcncsvc", "WdiServiceHost", "WdiSystemHost", "Wecsvc", "WerSvc", "WinHttpAutoProxySvc", "Winmgmt", "WinRM", "WlanSvc", "WManSvc", "WpnService", "WpnUserService_132fce", `
 "wscsvc", "WSearch", "msiserver", "TrustedInstaller", "IAStorDataMgrSvc")
 
@@ -418,7 +429,3 @@ Sleep 1
 Write-Host "Restarting Computer in 5 seconds" -ForegroundColor Yellow
 Sleep 5
 Restart-Computer
-
-# Links to May 2020 Windows Update downloads:
-# https://www.catalog.update.microsoft.com/Search.aspx?q=4552931
-# https://www.catalog.update.microsoft.com/Search.aspx?q=4556799
