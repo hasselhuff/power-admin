@@ -11,9 +11,9 @@
     and the Dell_Command_Update.xml files. You must keep this script in the Temp folder.
 .NOTES
     Name:  dell_command_update.ps1
-    Version: 0.0.0.2
+    Version: 0.0.0.3
     Author: Hasselhuff
-    Last Modified: 18 May 2020
+    Last Modified: 02 June 2020
 .REFERENCES
 #>
 
