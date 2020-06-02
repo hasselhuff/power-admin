@@ -5,12 +5,14 @@
    Affected host needs Dell Command Update installed for driver updates
 .DESCRIPTION
     Disables Bitlocker for possible BIOS updates
+    Deletes SoftwareDistribution and Catroot2 folders
     Performs Disk Cleanup to clear update cache and clear disk space
     Performs Disk Defragment
-    Deletes SoftwareDistribution folder and then recreates it as an empty directory
     Performs DISM and sfc scans to repair corrupted files
+    Enables .NET Frameworks
     Performs driver update with the Dell Command Update command line utility
-    Disables non-Microsoft services with exceptions.
+    Runs quoted service check and auto corrects
+    Disables non-Microsoft services with exceptions
     Performs restart on host
 .USAGE
     Run powershell as administrator and type path to this script.
@@ -20,17 +22,36 @@
     Authors: Hasselhuff, mclark-titor
     Last Modified: 02 June 2020
 .REFERENCES
+    http://www.theservergeeks.com/how-todisk-cleanup-using-powershell/
+    https://www.dell.com/support/manuals/us/en/04/command-update/dellcommandupdate_3.1.1_ug/command-line-interface-reference?guid=guid-92619086-5f7c-4a05-bce2-0d560c15e8ed&lang=en-us
+    https://gallery.technet.microsoft.com/scriptcenter/Windows-Unquoted-Service-190f0341
+    https://www.tenable.com/sc-report-templates/microsoft-windows-unquoted-service-path-enumeration
+    http://www.commonexploits.com/unquoted-service-paths/
 #>
 
+# This is for quoted service fx later on in the script (must be ran)
+ Param (
+ [parameter(Mandatory=$false)]
+ [Alias("s")]
+     [Bool]$FixServices=$true,
+ [parameter(Mandatory=$false)]
+ [Alias("u")]
+     [Switch]$FixUninstall,
+ [parameter(Mandatory=$false)]
+ [Alias("e")]
+     [Switch]$FixEnv,
+ [parameter(Mandatory=$false)]
+ [Alias("ShowOnly")]
+     [Switch]$WhatIf,
+ [parameter(Mandatory=$false)]
+ [Alias("h")]
+     [switch]$Help,
+ [System.IO.FileInfo]$Logname = "C:\Temp\ServicesFix-3.3.1.Log")
+ 
 # Suspend Bitlocker
 Write-Host "Suspending Bitlocker" -ForegroundColor Yellow
 Suspend-BitLocker -MountPoint "C:" -RebootCount 1
 Sleep 1
-###################################################################################################################################
-# Stop Symantec Agent
-Write-Host "Stopping Symantec Agent" -ForegroundColor Yellow
-& "C:\Program Files (x86)\Symantec\Symantec Endpoint Protection\smc.exe" -stop
-Sleep 3
 ###################################################################################################################################
 # Delete and recreate the SoftwareDistribution and catroot2 folder
 Write-Host "Cleaning SoftwareDistribution and Catroot2 Folders" -ForegroundColor Cyan
@@ -42,9 +63,9 @@ Stop-Service -Name CryptSvc -Force
 Sleep 1
 Stop-Service -Name msiserver -Force
 Sleep 1
-Stop-Service trustedinstaller
+Stop-Service trustedinstaller -Force
 Sleep 1
-Stop-Service UsoSvc
+Stop-Service UsoSvc -Force
 Sleep 1
 Remove-Item -Path C:\Windows\SoftwareDistribution -Recurse -Force
 Sleep 1
@@ -154,26 +175,7 @@ Catch{
 
 ###################################################################################################################################
 # Fix any services that got updated that need to be quoted
-Write-Host "Searching for unquoted services" -ForegroundColor Cyan
-
-    Param (
-    [parameter(Mandatory=$false)]
-    [Alias("s")]
-        [Bool]$FixServices=$true,
-    [parameter(Mandatory=$false)]
-    [Alias("u")]
-        [Switch]$FixUninstall,
-    [parameter(Mandatory=$false)]
-    [Alias("e")]
-        [Switch]$FixEnv,
-    [parameter(Mandatory=$false)]
-    [Alias("ShowOnly")]
-        [Switch]$WhatIf,
-    [parameter(Mandatory=$false)]
-    [Alias("h")]
-        [switch]$Help,
-    [System.IO.FileInfo]$Logname = "C:\Temp\ServicesFix-3.3.1.Log"
-)
+Write-Host "Searching for unquoted services" -ForegroundColor Cyan    
 Function Write-FileLog {
     Param (
         [parameter(Mandatory=$true,
@@ -396,11 +398,11 @@ $Required_Services =@(
 "cbdhsvc_132fce", "CDPSvc", "CDPUserSvc_132fce", "CertPropSvc", "ClickToRunSvc", "CoreMessagingRegistrar", "CryptSvc", "DcomLaunch", "DeviceAssociationService", `
 "Dhcp", "DiagTrack", "DispBrokerDesktopSvc", "Dnscache", "DoSvc", "DPS", "DusmSvc", "EventLog", "EventSystem", "FileSyncHelper", "FontCache", "FontCache3.0.0.0", `
 "gpsvc", "hidserv", "IKEEXT", "InstallService", "iphlpsvc", "KeyIso", "LanmanServer", "LanmanWorkstation", "LicenseManager", "lmhosts", "LSM", "mpssvc", "NcbService", `
-"Netlogon", "netprofm", "NlaSvc", "nsi", "OneDrive Updater Service", "OneSyncSvc_132fce", "online backup Service", "online backup Service Remote Management", "OSE.EXE", `
-"OSPPSVC.EXE", "PcaSvc", "perceptionsimulation", "PlugPlay", "PolicyAgent", "policyhost.exe", "Power", "ProfSvc", "QualysAgent", "QWAVE", "RasMan", "RpcEptMapper", "RpcSs", `
+"Netlogon", "netprofm", "NlaSvc", "nsi", "OneDrive Updater Service", "OneSyncSvc_132fce", "OSE.EXE", `
+"OSPPSVC.EXE", "PcaSvc", "perceptionsimulation", "PlugPlay", "PolicyAgent", "policyhost.exe", "Power", "ProfSvc", "QWAVE", "RasMan", "RpcEptMapper", "RpcSs", `
 "SamSs", "SCardSvr", "Schedule", "SDRSVC", "seclogon", "SecurityHealthService", "SENS", "sepWscSvc", "SgrmBroker", "SharedRealitySvc", `
 "ShellHWDetection", "SmsRouter", "spectrum", "Spooler", "SSDPSRV", "SstpSvc", "StateRepository", "StorSvc", "SysMain", "SystemEventsBroker", "TabletInputService", "TapiSrv", `
-"TeamViewer", "Themes", "TimeBrokerSvc", "TokenBroker", "TrkWks", "upnphost", "UserManager", "UsoSvc", "VaultSvc", "vpnagent", "W32Time", "WbioSrvc", "Wcmsvc", `
+ "Themes", "TimeBrokerSvc", "TokenBroker", "TrkWks", "upnphost", "UserManager", "UsoSvc", "VaultSvc","W32Time", "WbioSrvc", "Wcmsvc", `
 "wcncsvc", "WdiServiceHost", "WdiSystemHost", "Wecsvc", "WerSvc", "WinHttpAutoProxySvc", "Winmgmt", "WinRM", "WlanSvc", "WManSvc", "WpnService", "WpnUserService_132fce", `
 "wscsvc", "WSearch", "msiserver", "TrustedInstaller", "IAStorDataMgrSvc")
 
