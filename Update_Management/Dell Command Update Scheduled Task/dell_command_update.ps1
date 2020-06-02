@@ -11,21 +11,21 @@
     and the Dell_Command_Update.xml files. You must keep this script in the Temp folder.
 .NOTES
     Name:  dell_command_update.ps1
-    Version: 0.0.0.3
+    Version: 0.0.0.2
     Author: Hasselhuff
-    Last Modified: 29 May 2020
+    Last Modified: 18 May 2020
 .REFERENCES
 #>
 
 
 if(-not(Test-Path C:\Temp\Dell_UpdatesReport.xml)){
-    New-Item -Path C:\Temp -Name Dell_UpdatesReport.xml -ItemType File -Force -ErrorAction SilentlyContinue}
+    New-Item -Path C:\Temp -Name Dell_UpdatesReport.log -ItemType File -Force -ErrorAction SilentlyContinue}
 
 $Path = "C:\Temp"
 $Daysback = "-10"
 $CurrentDate = Get-Date
 $DatetoDelete = $CurrentDate.AddDays($Daysback)
-Get-ChildItem $Path | Where-Object {$_.Name -match "Dell_UpdatesReport.xml" -and $_.CreationTime -lt $DatetoDelete } | Remove-Item
+Get-ChildItem $Path | Where-Object {$_.Name -match "Dell_UpdatesReport.log" -and $_.CreationTime -lt $DatetoDelete } | Remove-Item
 
 $Path = "C:\Temp"
 $Daysback = "-10"
@@ -37,9 +37,10 @@ Write-Host "Begining Driver Updates" -ForegroundColor Cyan
 $dcu_path = (Get-ChildItem -Path C:\ -Filter dcu-cli.exe -ErrorAction SilentlyContinue -Recurse -Force).FullName
 Try{
     Test-Path $dcu_path
-    Write-Host "Searching for Available Driver Updates" -ForegroundColor Cyan
-    & "$dcu_path" /applyUpdates -reboot=disable
-    Sleep 5}                                      # Install all new drivers and updates and disables auto reboot             
+    Write-Host "Searching for Available Driver Updates" -ForegroundColor Cyan >> C:\Temp\Dell_UpdatesReport.log
+    & "$dcu_path" /scan -silent
+    & "$dcu_path" /applyUpdates -reboot=disable -outputLog=C:\Temp\Dell_UpdatesReport.log
+    Sleep 5}                                                
 Catch{
     Write-Host "Dell Command Update is not installed on this device" -ForegroundColor Yellow
     Write-Host "Fetching Latest Version of Dell Command | Update" -ForegroundColor Cyan
@@ -63,8 +64,9 @@ Catch{
     Start-Process -Wait "C:\Temp\dcu-setup.exe"
     Remove-Item -Path "C:\Temp\dcu-setup.exe" -Force
     Sleep 5
-    Write-Host "Searching for Available Driver Updates" -ForegroundColor Cyan
-    & "$dcu_path" /applyUpdates -reboot=disable
+    Write-Host "Searching for Available Driver Updates" -ForegroundColor Cyan >> C:\Temp\Dell_UpdatesReport.log
+    & "$dcu_path" /scan -silent
+    & "$dcu_path" /applyUpdates -reboot=disable -outputLog=C:\Temp\Dell_UpdatesReport.log
     #.\dcu-cli.exe /driverInstall                                                                     # Re-install all currently available drivers
     Sleep 5}  
 
