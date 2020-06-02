@@ -15,10 +15,33 @@
     Author: Hasselhuff
     Last Modified: 02 June 2020
 .REFERENCES
+    https://www.dell.com/support/manuals/us/en/04/command-update/dellcommandupdate_3.1.1_ug/command-line-interface-reference?guid=guid-92619086-5f7c-4a05-bce2-0d560c15e8ed&lang=en-us
+    https://gallery.technet.microsoft.com/scriptcenter/Windows-Unquoted-Service-190f0341
+    https://www.tenable.com/sc-report-templates/microsoft-windows-unquoted-service-path-enumeration
+    http://www.commonexploits.com/unquoted-service-paths/
 #>
 
+Param (
+    [parameter(Mandatory=$false)]
+    [Alias("s")]
+        [Bool]$FixServices=$true,
+    [parameter(Mandatory=$false)]
+    [Alias("u")]
+        [Switch]$FixUninstall,
+    [parameter(Mandatory=$false)]
+    [Alias("e")]
+        [Switch]$FixEnv,
+    [parameter(Mandatory=$false)]
+    [Alias("ShowOnly")]
+        [Switch]$WhatIf,
+    [parameter(Mandatory=$false)]
+    [Alias("h")]
+        [switch]$Help,
+    [System.IO.FileInfo]$Logname = "C:\Temp\ServicesFix-3.3.1.Log"
 
-if(-not(Test-Path C:\Temp\Dell_UpdatesReport.xml)){
+)
+
+if(-not(Test-Path C:\Temp\Dell_UpdatesReport.log)){
     New-Item -Path C:\Temp -Name Dell_UpdatesReport.log -ItemType File -Force -ErrorAction SilentlyContinue}
 
 $Path = "C:\Temp"
@@ -68,29 +91,11 @@ Catch{
     & "$dcu_path" /scan -silent
     & "$dcu_path" /applyUpdates -reboot=disable -outputLog=C:\Temp\Dell_UpdatesReport.log
     #.\dcu-cli.exe /driverInstall                                                                     # Re-install all currently available drivers
-    Sleep 5}  
+    Sleep 5} 
 
 ##################################################################################################
 Write-Host "Searching for unquoted services" -ForegroundColor Cyan
 
-    Param (
-    [parameter(Mandatory=$false)]
-    [Alias("s")]
-        [Bool]$FixServices=$true,
-    [parameter(Mandatory=$false)]
-    [Alias("u")]
-        [Switch]$FixUninstall,
-    [parameter(Mandatory=$false)]
-    [Alias("e")]
-        [Switch]$FixEnv,
-    [parameter(Mandatory=$false)]
-    [Alias("ShowOnly")]
-        [Switch]$WhatIf,
-    [parameter(Mandatory=$false)]
-    [Alias("h")]
-        [switch]$Help,
-    [System.IO.FileInfo]$Logname = "C:\Temp\ServicesFix-3.3.1.Log"
-)
 Function Write-FileLog {
     Param (
         [parameter(Mandatory=$true,
