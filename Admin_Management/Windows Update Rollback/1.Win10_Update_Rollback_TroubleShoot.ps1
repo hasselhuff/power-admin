@@ -29,7 +29,7 @@
     http://www.commonexploits.com/unquoted-service-paths/
 #>
 
-# This is for quoted service fx later on in the script (must be ran)
+# This is for quoted service fix later on in the script (must be ran)
  Param (
  [parameter(Mandatory=$false)]
  [Alias("s")]
