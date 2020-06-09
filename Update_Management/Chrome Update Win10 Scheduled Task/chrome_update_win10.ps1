@@ -21,9 +21,9 @@
     and the Chrome_Update.xml files. You must keep this script in the Temp folder.
 .NOTES
     Name:  chrome_update_win10.ps1
-    Version: 1.2.3
+    Version: 1.2.4
     Author: Hasselhuff
-    Last Modified: 28 April 2020
+    Last Modified: 09 June 2020
 .REFERENCES
     https://chromereleases.googleblog.com/search/label/Stable%20updates
 #>
