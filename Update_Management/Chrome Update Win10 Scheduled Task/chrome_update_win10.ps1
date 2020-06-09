@@ -1,4 +1,4 @@
-﻿  <#
+  <#
 .SYNOPSIS
     Script to run in GPO startup to auto search for available Chrome updates and apply them.
 .DESCRIPTION
@@ -45,15 +45,20 @@ if (($word=Test-Path "c:\program files (x86)\google\chrome\application") -eq "Tr
     Add-Content -Path C:\Temp\chrome-update.log -Value "Chrome version: $file_version installed"
     # Check if version is latest Chrome release
     $WebResponse = Invoke-WebRequest "https://chromereleases.googleblog.com/search/label/Stable%20updates" -UseBasicParsing
-    $latest_version = $WebResponse.Links.Href | Select-String "/stable-channel-update-for-desktop" -Context 1 | Out-String -Stream
-    $latest_version = $latest_version | Where {$_ -match "log/"} | Select -First 1
-    $latest_version = $latest_version.Replace("https://chromium.googlesource.com/chromium/src/+log/","")
-    $latest_version = $latest_version.Replace("?pretty=fuller&amp;n=10000","")
-    $latest_version = $latest_version -split "\.\."
-    $latest_version = $latest_version[1]
-    Write-Host "Latest stable version of chrome is: $latest_version" -ForegroundColor Green
-    Add-Content -Path C:\Temp\chrome-update.log -Value "Latest stable version of chrome is: $latest_version"
-    $compare_versions = $latest_version.Contains($file_version)
+    $WebLinkList = $WebResponse.Links.Href | Out-String -Stream
+    $Desktop_Releases = $WebLinkList | Select-String "/stable-channel-update-for-desktop"
+    $Latest_Desktop_Release = $Desktop_Releases[0]
+    $Index = $WebLinkList.IndexOf($Latest_Desktop_Release)
+    $Cut_Index = $Index - 1
+    $WebLinkList.RemoveRange(0,$Cut_Index)
+    $Stable_version = $WebLinkList | Where {$_ -match "log/"} | Select -First 1
+    $Stable_version = $Stable_version.Replace("https://chromium.googlesource.com/chromium/src/+log/","")
+    $Stable_version = $Stable_version.Replace("?pretty=fuller&amp;n=10000","")
+    $Stable_version = $Stable_version -split "\.\."
+    $Latest_version = $Stable_version[1]
+    Write-Host "Latest stable version of chrome is: $Latest_version" -ForegroundColor Green
+    Add-Content -Path C:\Temp\chrome-update.log -Value "Latest stable version of chrome is: $Latest_version"
+    $compare_versions = $Latest_version.Contains($file_version)
     if($compare_versions -eq $true){
         Write-Host "Host has latest version" -ForegroundColor Green
         Add-Content -Path C:\Temp\chrome-update.log -Value "Host has latest version"
