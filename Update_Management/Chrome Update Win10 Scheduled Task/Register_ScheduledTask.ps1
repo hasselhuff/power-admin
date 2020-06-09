@@ -1,4 +1,4 @@
-﻿  <#
+  <#
 .SYNOPSIS
     Script to register the scheduled task
 .DESCRIPTION
@@ -11,9 +11,9 @@
     Register_ScheduledTask.psm1.
 .NOTES
     Name:  Register_ScheduledTask.ps1
-    Version: 0.0.1
+    Version: 0.0.2
     Author: Hasselhuff
-    Last Modified: 06 May 2020
+    Last Modified: 09 June 2020
 .REFERENCES
     http://www.vsysad.com/2015/04/powershell-script-to-remove-permissions-inheritance-from-a-folder-then-remove-users-group-access-to-it/
     https://stackoverflow.com/questions/31721221/disable-inheritance-and-manually-apply-permissions-when-creating-a-folder-in-pow
@@ -34,7 +34,12 @@ $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT 
 $acl.SetAccessRule($accessRule)
 $acl | Set-Acl "C:\Temp"
 
-Register-ScheduledTask -TaskName "ChromeUpdate" -Xml (Get-Content "C:\Temp\ChromeUpdate.xml" | Out-String)
+try{
+    Unregister-ScheduledTask -TaskName ChromeUpdate -Confirm:$false -ErrorAction SilentlyContinue
+    Remove-Item -Path C:\Temp\chrome-update.log -Force -ErrorAction SilentlyContinue
+    }
+catch{}
 
+Register-ScheduledTask -TaskName "Chrome Update" -Xml (Get-Content "C:\Temp\ChromeUpdate.xml" | Out-String)
 Remove-Item -Path C:\Temp\ChromeUpdate.xml -Force -ErrorAction SilentlyContinue
 Remove-Item -Path C:\Temp\Register_ScheduledTask.ps1 -Force -ErrorAction SilentlyContinue
