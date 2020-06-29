@@ -1,7 +1,6 @@
-﻿<#
+  <#
 .SYNOPSIS
     Script to run in GPO startup to auto search for available Chrome updates and apply them.
-
 .DESCRIPTION
     Create the C:\Temp directory if not already created
     Deletes the chrome-update.log file if its creation time is older than 10 days from the current date
@@ -15,26 +14,21 @@
     Sets registry key to allow auto updates through the browser
     Deletes the Chrome installer
     Displays the host's new version of Chrome
-
+.REQUIRMENTS
+    Needs the Register_ScheduledTask.psm1 and the Chrome_Update.xml files in the Temp folder on the host machine
+    in order to be activated into the scheduled task. Once all three files are in the Temp folder just run the 
+    Register_ScheduledTask.psm1. It will register the scheduled task and then delete the Register_ScheduledTask.psm1
+    and the Chrome_Update.xml files. You must keep this script in the Temp folder.
 .NOTES
     Name:  chrome_update_win10.ps1
     Version: 1.2.3
     Author: Hasselhuff
     Last Modified: 28 April 2020
-
 .REFERENCES
     https://chromereleases.googleblog.com/search/label/Stable%20updates
 #>
 
-
-if((Get-Item -Path C:\Temp -ErrorAction SilentlyContinue).Exists -match $true){
-    Write-Host -ForegroundColor Green "C:\Temp already exists"}
-else{
-New-Item -Path C:\ -Name Temp -ItemType Directory -Force -ErrorAction SilentlyContinue}
-
-if((Get-Item -Path C:\Temp\chrome-update.log -ErrorAction SilentlyContinue).Exists -match $true){
-    Write-Host -ForegroundColor Green "chrome-update.log already exists"}
-else{
+if(-not(Test-Path C:\Temp\chrome-update.log)){
     New-Item -Path C:\Temp -Name chrome-update.log -ItemType File -Force -ErrorAction SilentlyContinue}
 
 $Path = "C:\temp"
@@ -51,15 +45,20 @@ if (($word=Test-Path "c:\program files (x86)\google\chrome\application") -eq "Tr
     Add-Content -Path C:\Temp\chrome-update.log -Value "Chrome version: $file_version installed"
     # Check if version is latest Chrome release
     $WebResponse = Invoke-WebRequest "https://chromereleases.googleblog.com/search/label/Stable%20updates" -UseBasicParsing
-    $latest_version = $WebResponse.Links.Href | Select-String "/stable-channel-update-for-desktop" -Context 1 | Out-String -Stream
-    $latest_version = $latest_version | Where {$_ -match "log/"} | Select -First 1
-    $latest_version = $latest_version.Replace("https://chromium.googlesource.com/chromium/src/+log/","")
-    $latest_version = $latest_version.Replace("?pretty=fuller&amp;n=10000","")
-    $latest_version = $latest_version -split "\.\."
-    $latest_version = $latest_version[1]
-    Write-Host "Latest stable version of chrome is: $latest_version" -ForegroundColor Green
-    Add-Content -Path C:\Temp\chrome-update.log -Value "Latest stable version of chrome is: $latest_version"
-    $compare_versions = $latest_version.Contains($file_version)
+    $WebLinkList = [System.Collections.ArrayList]$WebResponse.Links.Href
+    $Desktop_Releases = $WebLinkList | Select-String "/stable-channel-update-for-desktop"
+    $Latest_Desktop_Release = $Desktop_Releases[0]
+    $Index = $WebLinkList.IndexOf("$Latest_Desktop_Release")
+    $Cut_Index = $Index - 1
+    $WebLinkList.RemoveRange(0,$Cut_Index)
+    $Stable_version = $WebLinkList | Where {$_ -match "log/"} | Select -First 1
+    $Stable_version = $Stable_version.Replace("https://chromium.googlesource.com/chromium/src/+log/","")
+    $Stable_version = $Stable_version.Replace("?pretty=fuller&amp;n=10000","")
+    $Stable_version = $Stable_version -split "\.\."
+    $Latest_version = $Stable_version[1]
+    Write-Host "Latest stable version of chrome is: $Latest_version" -ForegroundColor Green
+    Add-Content -Path C:\Temp\chrome-update.log -Value "Latest stable version of chrome is: $Latest_version"
+    $compare_versions = $Latest_version.Contains($file_version)
     if($compare_versions -eq $true){
         Write-Host "Host has latest version" -ForegroundColor Green
         Add-Content -Path C:\Temp\chrome-update.log -Value "Host has latest version"
