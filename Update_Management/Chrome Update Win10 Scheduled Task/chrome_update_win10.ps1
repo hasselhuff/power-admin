@@ -21,9 +21,9 @@
     and the Chrome_Update.xml files. You must keep this script in the Temp folder.
 .NOTES
     Name:  chrome_update_win10.ps1
-    Version: 1.2.4
+    Version: 1.2.3
     Author: Hasselhuff
-    Last Modified: 09 June 2020
+    Last Modified: 28 April 2020
 .REFERENCES
     https://chromereleases.googleblog.com/search/label/Stable%20updates
 #>
@@ -45,10 +45,10 @@ if (($word=Test-Path "c:\program files (x86)\google\chrome\application") -eq "Tr
     Add-Content -Path C:\Temp\chrome-update.log -Value "Chrome version: $file_version installed"
     # Check if version is latest Chrome release
     $WebResponse = Invoke-WebRequest "https://chromereleases.googleblog.com/search/label/Stable%20updates" -UseBasicParsing
-    $WebLinkList = $WebResponse.Links.Href | Out-String -Stream
+    $WebLinkList = [System.Collections.ArrayList]$WebResponse.Links.Href
     $Desktop_Releases = $WebLinkList | Select-String "/stable-channel-update-for-desktop"
     $Latest_Desktop_Release = $Desktop_Releases[0]
-    $Index = $WebLinkList.IndexOf($Latest_Desktop_Release)
+    $Index = $WebLinkList.IndexOf("$Latest_Desktop_Release")
     $Cut_Index = $Index - 1
     $WebLinkList.RemoveRange(0,$Cut_Index)
     $Stable_version = $WebLinkList | Where {$_ -match "log/"} | Select -First 1
