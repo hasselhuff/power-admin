@@ -24,3 +24,10 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\W
 # Prevent Autorun so applications from any drive can not be automatically executed
 Write-Host -ForegroundColor Green "Setting: Prevent Autorun"
 New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name NoDriveTypeAutorun -PropertyType DWord -Value "255" -ErrorAction SilentlyContinue -Force
+
+# SMB Signing
+Write-Host -ForegroundColor Green "Setting: Require SMB Signing"
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\LanmanWorkStation\Parameters" -Name RequireSecuritySignature -Type DWord -Value 1 -ErrorAction SilentlyContinue -Force
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\LanmanWorkStation\Parameters" -Name EnableSecuritySignature -Type DWord -Value 1 -ErrorAction SilentlyContinue -Force
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\LanmanServer\Parameters" -Name RequireSecuritySignature -Type DWord -Value 1 -ErrorAction SilentlyContinue -Force
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\LanmanServer\Parameters" -Name EnableSecuritySignature -Type DWord -Value 1 -ErrorAction SilentlyContinue -Force
