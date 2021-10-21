@@ -371,7 +371,6 @@ $All_Services = (Get-Service).Name
 $Disabled_Services = @()
 $Disabled_Services = New-Object System.Collections.Generic.List[System.Object]
 Foreach ($service in $All_Services){
-    $Service_Status = (Get-Service -Name $service).Status
     if ($service -notin $Required_Services){
         Write-Host "Disabling: $service" -ForegroundColor Yellow
         Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
