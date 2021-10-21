@@ -13,6 +13,7 @@
     Performs driver update with the Dell Command Update command line utility
     Runs quoted service check and auto corrects
     Disables non-Microsoft services with exceptions
+    Set TemaViewer service to auto start
     Performs restart on host
 .USAGE
     Run powershell as administrator and type path to this script.
@@ -20,7 +21,7 @@
     Name:  Win10_Update_Rollback_Issue.ps1
     Version: 0.1.2
     Authors: Hasselhuff, mclark-titor
-    Last Modified: 02 June 2020
+    Last Modified: 21 October 2021
 .REFERENCES
     http://www.theservergeeks.com/how-todisk-cleanup-using-powershell/
     https://www.dell.com/support/manuals/us/en/04/command-update/dellcommandupdate_3.1.1_ug/command-line-interface-reference?guid=guid-92619086-5f7c-4a05-bce2-0d560c15e8ed&lang=en-us
@@ -28,154 +29,114 @@
     https://www.tenable.com/sc-report-templates/microsoft-windows-unquoted-service-path-enumeration
     http://www.commonexploits.com/unquoted-service-paths/
 #>
-
 # This is for quoted service fix later on in the script (must be ran)
- Param (
- [parameter(Mandatory=$false)]
- [Alias("s")]
-     [Bool]$FixServices=$true,
- [parameter(Mandatory=$false)]
- [Alias("u")]
-     [Switch]$FixUninstall,
- [parameter(Mandatory=$false)]
- [Alias("e")]
-     [Switch]$FixEnv,
- [parameter(Mandatory=$false)]
- [Alias("ShowOnly")]
-     [Switch]$WhatIf,
- [parameter(Mandatory=$false)]
- [Alias("h")]
-     [switch]$Help,
- [System.IO.FileInfo]$Logname = "C:\Temp\ServicesFix-3.3.1.Log")
- 
+    Param (
+    [parameter(Mandatory=$false)]
+    [Alias("s")]
+        [Bool]$FixServices=$true,
+    [parameter(Mandatory=$false)]
+    [Alias("u")]
+        [Switch]$FixUninstall,
+    [parameter(Mandatory=$false)]
+    [Alias("e")]
+        [Switch]$FixEnv,
+    [parameter(Mandatory=$false)]
+    [Alias("ShowOnly")]
+        [Switch]$WhatIf,
+    [parameter(Mandatory=$false)]
+    [Alias("h")]
+        [switch]$Help,
+    [System.IO.FileInfo]$Logname = "C:\Temp\ServicesFix-3.3.1.Log"
+)
+
+#Check admin priviliges
+If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+    [Security.Principal.WindowsBuiltInRole] "Administrator") )  {
+    Write-Warning "Please enter your domain administrative credentials."
+    Start-Process -Verb "Runas" -File PowerShell.exe -Argument "-STA -noprofile -file $($myinvocation.mycommand.definition)"
+    Break
+}
+
+
 # Suspend Bitlocker
-Write-Host "Suspending Bitlocker" -ForegroundColor Yellow
-Suspend-BitLocker -MountPoint "C:" -RebootCount 1
-Sleep 1
+$BLvols = Get-BitLockerVolume | Select-Object -Property MountPoint,ProtectionStatus 
+foreach($vol in $BLvols){
+    $mountpoint = $vol.MountPoint
+    $status = $vol.ProtectionStatus
+    if($status -match "On"){
+        Write-Host "Suspending Bitlocker for volume $mountpoint" -ForegroundColor Yellow
+        Suspend-BitLocker -MountPoint $mountpoint -RebootCount 1
+    }
+}
+
 ###################################################################################################################################
 # Delete and recreate the SoftwareDistribution and catroot2 folder
 Write-Host "Cleaning SoftwareDistribution and Catroot2 Folders" -ForegroundColor Cyan
 Stop-Service -Name BITS -Force
-Sleep 1
 Stop-Service -Name wuauserv -Force
-Sleep 1
 Stop-Service -Name CryptSvc -Force
-Sleep 1
 Stop-Service -Name msiserver -Force
-Sleep 1
 Stop-Service trustedinstaller -Force
-Sleep 1
 Stop-Service UsoSvc -Force
-Sleep 1
-Remove-Item -Path C:\Windows\SoftwareDistribution -Recurse -Force
-Sleep 1
+Rename-Item -Path C:\Windows\SoftwareDistribution -NewName SD.old -Force
+Remove-Item -Path C:\Windows\SD.old -Recurse -Force
 Remove-Item -Path C:\Windows\System32\catroot2 -Recurse -Force
 Start-Service -Name BITS
-Sleep 1
 Start-Service -Name wuauserv
-Sleep 1
 Start-Service -Name CryptSvc
-Sleep 1
 Start-Service -Name msiserver
-Sleep 1
 Start-Service trustedinstaller
-Sleep 1
 Start-Service UsoSvc
 ###################################################################################################################################
 # Perform Disk Clean Up and clear out windows update cache
 Write-Host "Performing Disk Cleanup" -ForegroundColor Cyan
-Sleep 1
-$HKLM = [UInt32] “0x80000002”
 $strKeyPath = “SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches”
 $strValueName = “StateFlags0065”
-$subkeys = gci -Path HKLM:\$strKeyPath -Name
+$subkeys = Get-ChildItem -Path HKLM:\$strKeyPath -Name
 ForEach ($subkey in $subkeys) {
-Try {
-New-ItemProperty -Path HKLM:\$strKeyPath\$subkey -Name $strValueName -PropertyType DWord -Value 2 -ErrorAction SilentlyContinue| Out-Null}
-Catch {}}
-
-Sleep 5
+    Try {
+        New-ItemProperty -Path HKLM:\$strKeyPath\$subkey -Name $strValueName -PropertyType DWord -Value 2 -ErrorAction SilentlyContinue| Out-Null}
+    Catch {}
+}
+Start-Sleep 5
 Start-Process cleanmgr -ArgumentList “/sagerun:65” -Wait -NoNewWindow -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
-Sleep 5
-
+Start-Sleep 5
 ForEach ($subkey in $subkeys) {
-Try {
-Remove-ItemProperty -Path HKLM:\$strKeyPath\$subkey -Name $strValueName | Out-Null}
-Catch {}}
-Sleep 5
+    Try {
+        Remove-ItemProperty -Path HKLM:\$strKeyPath\$subkey -Name $strValueName | Out-Null}
+    Catch {}
+}
 ###################################################################################################################################
 # Perform Disk Defragment
 Write-Host "Performing Disk Defragment" -ForegroundColor Cyan
-Sleep 1
+Start-Sleep 1
 Optimize-Volume -DriveLetter C -Defrag
-Sleep 5
 ###################################################################################################################################
 # Fix corrupted files
-Write-Host "Restoring Windows Image" -ForegroundColor Cyan
-DISM /online /Cleanup-image /startcomponentcleanup
-Write-Host "Start Components Cleaned" -ForegroundColor Green
-DISM /Online /Cleanup-Image /ScanHealth
-Write-Host "Health Scan Completed" -ForegroundColor Green
 DISM /Online /Cleanup-Image /CheckHealth
 Write-Host "Checked Image Health" -ForegroundColor Green
-Sleep 5
+DISM /Online /Cleanup-Image /ScanHealth
+Write-Host "Health Scan Completed" -ForegroundColor Green
+DISM /online /Cleanup-image /startcomponentcleanup
+Write-Host "Start Components Cleaned" -ForegroundColor Green
 DISM /Online /Cleanup-Image /RestoreHealth
 Write-Host "Restored Image Health" -ForegroundColor Green
-Sleep 5
 Write-Host "Performing System File Checks" -ForegroundColor Cyan
 cmd /C sfc /scannow
-Sleep 3
 ###################################################################################################################################
 # Enabling .NET Frameworks
 Write-Host -ForegroundColor Cyan "Checking for Available .NET Frameworks"
-$ASPNET = (Get-WindowsOptionalFeature -Online | Where {$_.State -match "Disabled" -and $_.FeatureName -match '\w*-ASPNET\d\d' -and $_.FeatureName -match '^Net'}).FeatureName
+$ASPNET = (Get-WindowsOptionalFeature -Online | Where-Object {$_.State -match "Disabled" -and $_.FeatureName -match '\w*-ASPNET\d\d' -and $_.FeatureName -match '^Net'}).FeatureName
 
-if ($ASPNET -ne $null){
+if ( $null -ne $ASPNET){
     foreach ($a in $ASPNET){
         Write-Host -ForegroundColor Green "$a is available!"
         Enable-WindowsOptionalFeature -Online -FeatureName $a -NoRestart -ErrorAction SilentlyContinue }}
 else{
     Write-Host -ForegroundColor Red "There is no ASP .NET Framework available for install"}
 ###################################################################################################################################
-# Perform driver updates with Dell Command Update
-Write-Host "Begining Driver Updates" -ForegroundColor Cyan
-$dcu_path = (Get-ChildItem -Path C:\ -Filter dcu-cli.exe -ErrorAction SilentlyContinue -Recurse -Force).FullName
-Try{
-    Test-Path $dcu_path
-    Write-Host "Searching for Available Driver Updates" -ForegroundColor Cyan
-    & "$dcu_path" /applyUpdates -reboot=disable
-    Sleep 5}                                      # Install all new drivers and updates and disables auto reboot             
-Catch{
-    Write-Host "Dell Command Update is not installed on this device" -ForegroundColor Yellow
-    Write-Host "Fetching Latest Version of Dell Command | Update" -ForegroundColor Cyan
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $WebResponse = Invoke-WebRequest -Uri "https://www.dell.com/support/article/en-us/sln311129/dell-command-update?lang=en" -UseBasicParsing
-    $latest_version_url = $WebResponse.Links.Href | Select-String "DriversDetails" | Out-String -Stream
-    $latest_version_url = $latest_version_url[3]
-    [System.Uri]$latest_version_url
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $WebResponse2 = Invoke-WebRequest -Uri $latest_version_url -UseBasicParsing
-    $latest_version_download = $WebResponse2.Links.Href | Select-String ".exe" | Out-String -Stream
-    $latest_version_download = $latest_version_download[1]
-    [System.Uri]$latest_version_download
-    ##################################################################################################
-    $output = "C:\Temp\dcu-setup.exe"
-    # Get download
-    Write-Host "Downloading Dell Command | Update" -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $latest_version_download -OutFile $output -ErrorAction SilentlyContinue
-    #Begin install
-    Write-Host "Installing Dell Command | Update" -ForegroundColor Cyan
-    Start-Process -Wait "C:\Temp\dcu-setup.exe"
-    Remove-Item -Path "C:\Temp\dcu-setup.exe" -Force
-    Sleep 5
-    Write-Host "Searching for Available Driver Updates" -ForegroundColor Cyan
-    & "$dcu_path" /applyUpdates -reboot=disable
-    #.\dcu-cli.exe /driverInstall                                                                     # Re-install all currently available drivers
-    Sleep 5}  
-
-###################################################################################################################################
 # Fix any services that got updated that need to be quoted
-Write-Host "Searching for unquoted services" -ForegroundColor Cyan    
+Write-Host "Searching for unquoted services" -ForegroundColor Cyan
 Function Write-FileLog {
     Param (
         [parameter(Mandatory=$true,
@@ -391,18 +352,18 @@ if (! [string]::IsNullOrEmpty($Logname)){
         -FixEnv:$FixEnv
 }
 ###################################################################################################################################
-# Disable all non-Microsoft Services except for TeamViewer, Qualys, CloudBerry, and CISCO vpn
+# Disable all non-Microsoft Services except for TeamViewer
 Write-Host "Disabling Non-Microsoft and Buisness Critical Services at Boot Up" -ForegroundColor Yellow
 $Required_Services =@(
 "AdobeARMservice", "Appinfo", "AudioEndpointBuilder", "Audiosrv", "BDESVC", "BFE", "BITS", "BrokerInfrastructure", "BTAGService", "camsvc", "CbDefense", `
 "cbdhsvc_132fce", "CDPSvc", "CDPUserSvc_132fce", "CertPropSvc", "ClickToRunSvc", "CoreMessagingRegistrar", "CryptSvc", "DcomLaunch", "DeviceAssociationService", `
 "Dhcp", "DiagTrack", "DispBrokerDesktopSvc", "Dnscache", "DoSvc", "DPS", "DusmSvc", "EventLog", "EventSystem", "FileSyncHelper", "FontCache", "FontCache3.0.0.0", `
 "gpsvc", "hidserv", "IKEEXT", "InstallService", "iphlpsvc", "KeyIso", "LanmanServer", "LanmanWorkstation", "LicenseManager", "lmhosts", "LSM", "mpssvc", "NcbService", `
-"Netlogon", "netprofm", "NlaSvc", "nsi", "OneDrive Updater Service", "OneSyncSvc_132fce", "OSE.EXE", `
+"Netlogon", "netprofm", "NlaSvc", "nsi", "OneDrive Updater Service", "OneSyncSvc_132fce", "online backup Service", "OSE.EXE", `
 "OSPPSVC.EXE", "PcaSvc", "perceptionsimulation", "PlugPlay", "PolicyAgent", "policyhost.exe", "Power", "ProfSvc", "QWAVE", "RasMan", "RpcEptMapper", "RpcSs", `
 "SamSs", "SCardSvr", "Schedule", "SDRSVC", "seclogon", "SecurityHealthService", "SENS", "sepWscSvc", "SgrmBroker", "SharedRealitySvc", `
 "ShellHWDetection", "SmsRouter", "spectrum", "Spooler", "SSDPSRV", "SstpSvc", "StateRepository", "StorSvc", "SysMain", "SystemEventsBroker", "TabletInputService", "TapiSrv", `
- "Themes", "TimeBrokerSvc", "TokenBroker", "TrkWks", "upnphost", "UserManager", "UsoSvc", "VaultSvc","W32Time", "WbioSrvc", "Wcmsvc", `
+"TeamViewer", "Themes", "TimeBrokerSvc", "TokenBroker", "TrkWks", "upnphost", "UserManager", "UsoSvc", "VaultSvc", "W32Time", "WbioSrvc", "Wcmsvc", `
 "wcncsvc", "WdiServiceHost", "WdiSystemHost", "Wecsvc", "WerSvc", "WinHttpAutoProxySvc", "Winmgmt", "WinRM", "WlanSvc", "WManSvc", "WpnService", "WpnUserService_132fce", `
 "wscsvc", "WSearch", "msiserver", "TrustedInstaller", "IAStorDataMgrSvc")
 
@@ -411,23 +372,27 @@ $Disabled_Services = @()
 $Disabled_Services = New-Object System.Collections.Generic.List[System.Object]
 Foreach ($service in $All_Services){
     $Service_Status = (Get-Service -Name $service).Status
-    if ($service -notin $Required_Services -and $Service_Status -match "Running"){
+    if ($service -notin $Required_Services){
         Write-Host "Disabling: $service" -ForegroundColor Yellow
-        #Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
-        $Disabled_Services.Add("$service")}}
+        Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
+        $Disabled_Services.Add("$service")
+    }
+}
+New-Item -Path C:\ -Name Temp -ItemType Directory -Force
+Add-Content -Value $Disabled_Services -Path C:\Temp\Disabled_Services.txt
 
-try{
-    Add-Content -Value $Disabled_Services -Path C:\Temp\Disabled_Services.txt}
-catch{
-    New-Item -Path C:\ -Name Temp -ItemType Directory -Force
-    Add-Content -Value $Disabled_Services -Path C:\Temp\Disabled_Services.txt}
+#Set TeamViewer or AnyDesk to Auto Start
+if( $null -notmatch (Get-Service TeamViewer -ErrorAction SilentlyContinue)){
+    Write-Host "Set TeamViewer Service to Start on Boot" -ForegroundColor Cyan
+    Set-Service -Name TeamViewer -StartupType Automatic
+}
 
-#Set TeamViewer to Auto Start
-Write-Host "Set TeamViewer Service to Start on Boot" -ForegroundColor Cyan
-Set-Service -Name TeamViewer -StartupType Automatic
-Sleep 1
+if( $null -notmatch (Get-Service AnyDesk -ErrorAction SilentlyContinue)){
+    Write-Host "Set AnyDesk Service to Start on Boot" -ForegroundColor Cyan
+    Set-Service -Name TeamViewer -StartupType Automatic
+}
 
 # Perform restart
 Write-Host "Restarting Computer in 5 seconds" -ForegroundColor Yellow
-Sleep 5
+Start-Sleep 5
 Restart-Computer
