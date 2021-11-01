@@ -1,13 +1,11 @@
 # Various Microsoft PowerShell Scripts for Sysadmins
 > Date: Mon Nov 01 09:20 EST 2021
-
+>
 Scripts are divided into categories for ease of searching.
 * [Admin Management](Admin_Management): issues I have had with multiple  host machines and needed a script to automate the tasks.
 * [Vulnerability Management](Vuln_Management): Scripts to remediate common vulnerabilities or to harden systems with best secruity practices.
 * [Scanners](Scanners): Scripts built into utilities to perform a wide spread of functions:
-    * enum_script.psm1: can be used to scan active IP's on a network based on which networks your network adapters are connected to, scan         for active ports either by manual selection or common ports, PSRemoting (if the host has it enabled and you have credentials to           the remote host) to conduct enumeration of settings and other information of interest.
- 
-
+>
 ## These scripts are built in mind for the following:
 * To not alert the user of any changes or your presence on their machine.
 * Supress forced reboots (unless otherwise specified in the script).
