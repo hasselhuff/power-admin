@@ -1,5 +1,4 @@
-# ms-windows
-## Various Microsoft PowerShell Scripts for Sysadmins
+# Various Microsoft PowerShell Scripts for Sysadmins
 ## Date: Mon April 20 13:40 EST 2020
 
 Scripts are divided into categories for ease of searching.
