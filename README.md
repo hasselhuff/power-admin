@@ -3,8 +3,9 @@
 >
 Scripts are divided into categories for ease of searching.
 * [Admin Management](Admin_Management): issues I have had with multiple  host machines and needed a script to automate the tasks.
+* [Scanners](Scanners): Scripts built into utilities to perform a wide spread of functions.
 * [Vulnerability Management](Vuln_Management): Scripts to remediate common vulnerabilities or to harden systems with best secruity practices.
-* [Scanners](Scanners): Scripts built into utilities to perform a wide spread of functions:
+
 >
 ## These scripts are built in mind for the following:
 * To not alert the user of any changes or your presence on their machine.
