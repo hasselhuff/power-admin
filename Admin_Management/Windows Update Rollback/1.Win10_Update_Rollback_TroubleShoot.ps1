@@ -19,9 +19,7 @@
     Run powershell as administrator and type path to this script.
 .NOTES
     Name:  Win10_Update_Rollback_Issue.ps1
-    Version: 0.1.2
     Authors: Hasselhuff, mclark-titor
-    Last Modified: 21 October 2021
 .REFERENCES
     http://www.theservergeeks.com/how-todisk-cleanup-using-powershell/
     https://www.dell.com/support/manuals/us/en/04/command-update/dellcommandupdate_3.1.1_ug/command-line-interface-reference?guid=guid-92619086-5f7c-4a05-bce2-0d560c15e8ed&lang=en-us
@@ -67,6 +65,18 @@ foreach($vol in $BLvols){
         Write-Host "Suspending Bitlocker for volume $mountpoint" -ForegroundColor Yellow
         Suspend-BitLocker -MountPoint $mountpoint -RebootCount 1
     }
+}
+
+# Run Dell Command Updates if the dcu-cli.exe is present on the system
+if (Test-Path -Path C:\Program Files (x86)\Dell\CommandUpdate\dcu-cli.exe){
+    Write-Host "Searching for Available Driver Updates" -ForegroundColor Cyan
+    & "$dcu_path" /scan
+    & "$dcu_path" /applyUpdates -reboot=disable
+    Write-Host ""
+    Write-Host "Driver Updates Completed" -ForegroundColor Cyan
+}
+else{
+    Write-Host "Dell Command Update CLI not present" -ForegroundColor Yellow
 }
 
 ###################################################################################################################################
@@ -211,7 +221,7 @@ Function Write-FileLog {
 } # End Function
 
 
-Function Fix-ServicePath
+Function Set-ServicePath
 {
     Param (
         [bool]$FixServices=$true,
@@ -338,14 +348,14 @@ If (($OS -eq $true) -and ($PoSh -eq $true)){
 if (! [string]::IsNullOrEmpty($Logname)){
     '*********************************************************************' | Write-FileLog -Logname $Logname
     $validation | Write-FileLog -Logname $Logname -OutOnScreen
-    Fix-ServicePath `
+    Set-ServicePath `
         -FixUninstall:$FixUninstall `
         -FixServices:$FixServices `
         -WhatIf:$WhatIf `
         -FixEnv:$FixEnv | Write-FileLog -Logname $Logname -OutOnScreen
 } else {
     Write-Output $validation
-    Fix-ServicePath `
+    Set-ServicePath `
         -FixUninstall:$FixUninstall `
         -FixServices:$FixServices `
         -WhatIf:$WhatIf `
